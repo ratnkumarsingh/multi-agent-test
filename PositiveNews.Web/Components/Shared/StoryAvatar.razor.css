@@ -1,0 +1,17 @@
+.story-avatar {
+    display: block;
+    border-radius: 50%;
+    background-size: cover;
+    background-position: center;
+    flex-shrink: 0;
+}
+
+.story-avatar--large {
+    width: 96px;
+    height: 96px;
+}
+
+.story-avatar--small {
+    width: 56px;
+    height: 56px;
+}

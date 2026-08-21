@@ -13,11 +13,13 @@ servers) fit together in general. See `CLAUDE.md` for this project's own convent
   phases), MCP client wiring (`Mcp/NewsSearchMcpClient.cs`).
 - `PositiveNews.McpServer` — custom MCP server exposing a `SearchNews` tool over stdio,
   backed by NewsAPI.org (`INewsSearchClient`, one-file provider swap).
-- `PositiveNews.Core`, `PositiveNews.Web` — added in later phases.
+- `PositiveNews.Web` — Blazor Web App (Interactive Server), scaffolded as a shell in
+  Phase 3 with hardcoded placeholder data; wired to real data in Phase 6.
+- `PositiveNews.Core` — added once persistence lands (Phase 5).
 - `.claude/agents/multi-agent-reviewer.md`, `.claude/agents/schema-reviewer.md` — starter
   subagents for reviewing C# changes and JSON Schemas/MCP tool descriptions.
-- `.claude/skills/` — empty; add a skill here once there's a concrete
-  scaffolding or automation task for this project.
+- `.claude/skills/blazor-skill/` — Blazor component/coding conventions for
+  `PositiveNews.Web` (code-behind split, `EventCallback`, `@key`, CSS isolation).
 - `.claude/settings.json` — empty settings, ready to wire up hooks.
 - `hooks/` — empty; reserved for future hook executables.
 - `.mcp.json` — registers `PositiveNews.McpServer` so it's directly pokeable from a
@@ -25,11 +27,15 @@ servers) fit together in general. See `CLAUDE.md` for this project's own convent
 
 ## Status
 
-Phase 2 complete and verified live (custom MCP server + client, both a direct
-tool call and a Claude `tool_choice: auto` round trip against real NewsAPI.org
-data). Next: Phase 3 (multi-agent orchestration pipeline). See the phase-wise
-plan (`C:\Users\Ratnesh\.claude\plans\can-you-create-a-structured-rabin.md`)
-for the full roadmap.
+Phase 3 complete: `PositiveNews.Web` (Blazor Web App, Interactive Server) shell —
+two-column blog layout (article list + sidebar), hand-built reusable components
+(`Icon`, `ArticleCard`, `SearchBox`, `Sidebar`, etc.) under `Components/Shared`,
+hardcoded placeholder story data. The sidebar search box live-filters the list
+via the Interactive Server circuit — no page reload — confirming the render
+mode is genuinely active. Next: Phase 4 (multi-agent orchestration pipeline).
+See the phase-wise plan
+(`C:\Users\Ratnesh\.claude\plans\can-you-create-a-structured-rabin.md`) for the
+full roadmap.
 
 ## Run
 
@@ -45,4 +51,7 @@ dotnet run --project PositiveNews.Cli -- mcp-direct "search query"
 
 # Claude decides (tool_choice: auto) whether to call SearchNews
 dotnet run --project PositiveNews.Cli -- mcp-auto "find one uplifting recent news story"
+
+# Blazor Web App shell (placeholder data, no backend wiring yet)
+dotnet run --project PositiveNews.Web
 ```

@@ -1,0 +1,42 @@
+@if (Kind == IconKind.Calendar)
+{
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3.5" y="5" width="17" height="16" rx="2" />
+        <line x1="3.5" y1="9.5" x2="20.5" y2="9.5" />
+        <line x1="8" y1="3" x2="8" y2="7" />
+        <line x1="16" y1="3" x2="16" y2="7" />
+    </svg>
+}
+else if (Kind == IconKind.Folder)
+{
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3.5 6.5c0-.83.67-1.5 1.5-1.5h4l2 2.5h8c.83 0 1.5.67 1.5 1.5v9c0 .83-.67 1.5-1.5 1.5H5c-.83 0-1.5-.67-1.5-1.5v-11.5Z" />
+    </svg>
+}
+else if (Kind == IconKind.Comment)
+{
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 5.5h16a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H10l-4.5 4v-4H4a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1Z" />
+    </svg>
+}
+else if (Kind == IconKind.Search)
+{
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="10.5" cy="10.5" r="6.5" />
+        <line x1="20" y1="20" x2="15.3" y2="15.3" />
+    </svg>
+}
+else if (Kind == IconKind.Person)
+{
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="8" r="3.5" />
+        <path d="M4.5 20c0-3.6 3.36-6.5 7.5-6.5s7.5 2.9 7.5 6.5" />
+    </svg>
+}
+else if (Kind == IconKind.Eye)
+{
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" />
+        <circle cx="12" cy="12" r="2.6" />
+    </svg>
+}

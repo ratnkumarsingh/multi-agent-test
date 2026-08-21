@@ -2,4 +2,5 @@
   <Project Path="PositiveNews.Agents/PositiveNews.Agents.csproj" />
   <Project Path="PositiveNews.Cli/PositiveNews.Cli.csproj" />
   <Project Path="PositiveNews.McpServer/PositiveNews.McpServer.csproj" />
+  <Project Path="PositiveNews.Web/PositiveNews.Web.csproj" />
 </Solution>
