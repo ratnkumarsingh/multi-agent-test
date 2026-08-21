@@ -26,9 +26,7 @@ suspecting anything else.
 ## Component structure
 
 - **Code-behind split**: `ComponentName.razor` (markup only) + `ComponentName.razor.cs`
-  (partial class with any non-trivial `@code`). Trivial components (a couple of parameters,
-  no logic) may keep a small `@code` block inline in the `.razor` file — don't force a
-  `.razor.cs` file that would just contain three property declarations.
+  . Always force a  `.razor.cs` file .
 - **CSS**: one `wwwroot/app.css` for global resets, typography, and CSS custom-property
   design tokens (`--color-*`, `--font-*`, `--layout-*`, defined in Phase 3). Every component
   that needs its own layout/spacing gets a sibling `ComponentName.razor.css` (Blazor CSS

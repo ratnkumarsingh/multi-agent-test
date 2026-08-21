@@ -1,9 +1,1 @@
 <span class="story-avatar story-avatar--@Size.ToString().ToLowerInvariant()" style="background-image:@Gradient" aria-hidden="true"></span>
-
-@code {
-    [Parameter, EditorRequired]
-    public string Gradient { get; set; } = string.Empty;
-
-    [Parameter]
-    public StoryAvatarSize Size { get; set; } = StoryAvatarSize.Large;
-}
