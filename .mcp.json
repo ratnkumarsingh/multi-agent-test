@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "positivenews": {
+      "type": "stdio",
+      "command": "dotnet",
+      "args": ["run", "--project", "./PositiveNews.McpServer"]
+    }
+  }
+}
