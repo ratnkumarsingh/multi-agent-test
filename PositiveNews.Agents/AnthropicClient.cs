@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -82,6 +83,102 @@ public sealed class AnthropicClient
         bool forceTool = true,
         CancellationToken ct = default)
     {
+        var content = await SendMessagesAsync(
+            systemPrompt,
+            new object[] { new { role = "user", content = userMessage } },
+            tool,
+            forceTool,
+            ct);
+
+        foreach (var block in content.EnumerateArray())
+        {
+            if (block.GetProperty("type").GetString() == "tool_use" &&
+                block.GetProperty("name").GetString() == tool.Name)
+            {
+                // Clone so the value survives past the JsonDocument's lifetime.
+                return block.GetProperty("input").Clone();
+            }
+        }
+
+        throw new InvalidOperationException(
+            $"Claude did not return a '{tool.Name}' tool_use block. Raw content: {content}");
+    }
+
+    /// <summary>
+    /// Offers <paramref name="tool"/> with <c>tool_choice: auto</c> so Claude genuinely
+    /// decides whether to call it — the contrasting mode to <see cref="CallToolAsync"/>'s
+    /// forced call, used where Claude should weigh whether the tool is even needed (e.g.
+    /// an MCP search tool). Each time Claude calls the tool, <paramref name="executeTool"/>
+    /// runs it and the result is fed back for another turn — tool_choice stays "auto"
+    /// throughout, so Claude may call the tool more than once (e.g. to refine a query)
+    /// before answering in text, which is why this loops rather than doing a single
+    /// request/response/request round trip.
+    /// </summary>
+    public async Task<string> RunAutoToolConversationAsync(
+        string systemPrompt,
+        string userMessage,
+        AnthropicToolSpec tool,
+        Func<JsonElement, CancellationToken, Task<JsonElement>> executeTool,
+        CancellationToken ct = default)
+    {
+        const int MaxToolCalls = 5;
+
+        var messages = new List<object> { new { role = "user", content = userMessage } };
+
+        for (var i = 0; i <= MaxToolCalls; i++)
+        {
+            var content = await SendMessagesAsync(systemPrompt, messages, tool, forceTool: false, ct);
+
+            JsonElement? toolUse = null;
+            foreach (var block in content.EnumerateArray())
+            {
+                if (block.GetProperty("type").GetString() == "tool_use")
+                {
+                    toolUse = block;
+                    break;
+                }
+            }
+
+            if (toolUse is not { } toolUseBlock)
+            {
+                return ExtractText(content);
+            }
+
+            if (i == MaxToolCalls)
+            {
+                return ExtractText(content) is { Length: > 0 } text
+                    ? text
+                    : $"(Claude kept calling {tool.Name} without answering after {MaxToolCalls} calls.)";
+            }
+
+            var toolResult = await executeTool(toolUseBlock.GetProperty("input"), ct);
+
+            messages.Add(new { role = "assistant", content });
+            messages.Add(new
+            {
+                role = "user",
+                content = new object[]
+                {
+                    new
+                    {
+                        type = "tool_result",
+                        tool_use_id = toolUseBlock.GetProperty("id").GetString(),
+                        content = toolResult.GetRawText()
+                    }
+                }
+            });
+        }
+
+        throw new UnreachableException();
+    }
+
+    private async Task<JsonElement> SendMessagesAsync(
+        string systemPrompt,
+        IReadOnlyList<object> messages,
+        AnthropicToolSpec tool,
+        bool forceTool,
+        CancellationToken ct)
+    {
         object toolChoice = forceTool
             ? new { type = "tool", name = tool.Name }
             : new { type = "auto" };
@@ -91,10 +188,7 @@ public sealed class AnthropicClient
             model = _model,
             max_tokens = 4096,
             system = systemPrompt,
-            messages = new object[]
-            {
-                new { role = "user", content = userMessage }
-            },
+            messages,
             tools = new object[]
             {
                 new { name = tool.Name, description = tool.Description, input_schema = tool.InputSchema }
@@ -111,19 +205,20 @@ public sealed class AnthropicClient
         }
 
         using var doc = JsonDocument.Parse(raw);
-        var content = doc.RootElement.GetProperty("content");
+        // Clone so the value survives past the JsonDocument's lifetime.
+        return doc.RootElement.GetProperty("content").Clone();
+    }
 
+    private static string ExtractText(JsonElement content)
+    {
+        var parts = new List<string>();
         foreach (var block in content.EnumerateArray())
         {
-            if (block.GetProperty("type").GetString() == "tool_use" &&
-                block.GetProperty("name").GetString() == tool.Name)
+            if (block.GetProperty("type").GetString() == "text")
             {
-                // Clone so the value survives past the JsonDocument's lifetime.
-                return block.GetProperty("input").Clone();
+                parts.Add(block.GetProperty("text").GetString() ?? string.Empty);
             }
         }
-
-        throw new InvalidOperationException(
-            $"Claude did not return a '{tool.Name}' tool_use block. Raw response: {raw}");
+        return string.Join("\n", parts);
     }
 }
