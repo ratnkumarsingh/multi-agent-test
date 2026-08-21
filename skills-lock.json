@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "skills": {
+    "architecture": {
+      "source": "managedcode/dotnet-skills",
+      "sourceType": "github",
+      "skillPath": "catalog/Platform/Architecture/skills/architecture/SKILL.md",
+      "computedHash": "d01a14b625923663a3a22335ec2d4d2185266373b42c18352744ee931c338a32"
+    },
+    "modern-csharp": {
+      "source": "managedcode/dotnet-skills",
+      "sourceType": "github",
+      "skillPath": "catalog/Tools/Modern-CSharp/skills/modern-csharp/SKILL.md",
+      "computedHash": "01db1dbc00057f40b420bd5e186e8efbdda6eb244753ab0fb91e761897da1f38"
+    }
+  }
+}

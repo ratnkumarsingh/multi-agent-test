@@ -12,6 +12,16 @@ obj/
 # Local Claude Code settings
 .claude/settings.local.json
 
+# npx-skills-installed content: .agents/skills/<name> is the canonical store, and
+# .claude/skills/<name> for an installed (not hand-authored) skill is meant to be a
+# symlink into it. This checkout has core.symlinks=false, so git would otherwise walk
+# through the symlink and commit a full duplicate copy of the content at both paths.
+# skills-lock.json (tracked) is what makes `npx skills add` reproduce these locally —
+# regenerate rather than commit the copies themselves.
+.agents/
+.claude/skills/architecture/
+.claude/skills/modern-csharp/
+
 # Secrets — never commit these; use `dotnet user-secrets` instead
 .env
 .env.*
