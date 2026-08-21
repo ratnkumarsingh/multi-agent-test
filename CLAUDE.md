@@ -83,16 +83,42 @@ in the sibling `Aviral_Maths` project (`Aviral_Maths.AI/ClaudeOptions.cs`) — s
 Anthropic-compatible gateway instead of `api.anthropic.com` directly, if you want to. Leave
 them unset to talk to Anthropic directly (the default).
 
+## Persistence
+
+One SQLite file at the repo root, `positivenews.db` (gitignored — local state, not shared),
+resolved via `AppContext.BaseDirectory` rather than a relative path so every project that
+touches it (`PositiveNews.Cli` now, `PositiveNews.Web` from Phase 6) lands on the same
+physical file regardless of which process is running or its working directory. `DbSet`s
+live on `PositiveNewsDbContext` (`PositiveNews.Core/Data/`); `IDbContextFactory<PositiveNewsDbContext>`
+(not a single shared `DbContext`) is what callers inject, since `DbContext` isn't
+thread-safe and `Orchestrator`'s fan-out stages need several short-lived contexts open
+concurrently — each factory call opens its own connection.
+
+New migration after an entity change:
+```
+dotnet ef migrations add <Name> --project PositiveNews.Core
+```
+(`PositiveNewsDbContextDesignTimeFactory` lets this run without needing `--startup-project`.)
+Migrations apply automatically at startup (`Database.MigrateAsync()`), not manually.
+
 ## Reliability posture
 
 Each pipeline stage (search, score, summarize, translate, ...) is its own agent call
 rather than one long-lived conversation thread — this sidesteps context dilution (a
 long session's early instructions losing effective salience even below the token limit)
 by construction, not by periodic resets. `Orchestrator`'s fan-out stages (scoring,
-summarizing) isolate per-candidate failures rather than aborting the whole batch — see
-`PositiveNews.Agents/Orchestrator.cs`. Once persistence lands (Phase 5), pipeline runs
-are additionally made idempotent per calendar day with each step traced for
-inspection/resumability.
+summarizing) isolate per-candidate failures rather than aborting the whole batch, each
+agent call is wrapped in bounded retry-with-backoff, and every stage persists
+incrementally to SQLite (`PositiveNews.Core`) — see `PositiveNews.Agents/Orchestrator.cs`.
+This is what makes a `PipelineRun` both idempotent per calendar day (a `Completed` run is
+a no-op on rerun) and resumable at the individual-candidate level (a rerun skips
+candidates already searched/scored/summarized, not just skips the whole run), with every
+agent invocation traced in `PipelineStep` for inspection via `PositiveNews.Cli history`.
+
+**A real SQLite/EF Core gotcha hit here**: the SQLite provider can't translate
+`ORDER BY` on a `DateTimeOffset` column into SQL (`NotSupportedException` at query time,
+not at compile time) — order by an int/auto-increment `Id` or a `DateOnly` column instead
+when the query needs to run server-side.
 
 ## Verification loop
 

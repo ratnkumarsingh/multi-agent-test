@@ -30,3 +30,9 @@ hooks/*/publish/
 # Secrets — never commit these; use `dotnet user-secrets` instead
 .env
 .env.*
+
+# The local SQLite database (positivenews.db + its WAL/SHM sidecar files) — generated at
+# the repo root by PositiveNews.Cli/PositiveNews.Web, not shared state.
+positivenews.db
+positivenews.db-shm
+positivenews.db-wal
