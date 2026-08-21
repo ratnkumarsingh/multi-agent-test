@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="PositiveNews.Agents/PositiveNews.Agents.csproj" />
+  <Project Path="PositiveNews.Cli/PositiveNews.Cli.csproj" />
+</Solution>

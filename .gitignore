@@ -11,3 +11,7 @@ obj/
 
 # Local Claude Code settings
 .claude/settings.local.json
+
+# Secrets — never commit these; use `dotnet user-secrets` instead
+.env
+.env.*
