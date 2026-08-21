@@ -15,11 +15,3 @@
         <ReadMoreLink />
     </div>
 </article>
-
-@code {
-    [Parameter, EditorRequired]
-    public PlaceholderStory Story { get; set; } = null!;
-
-    private string CommentLabel =>
-        Story.CommentCount == 1 ? "1 Comment" : $"{Story.CommentCount} Comments";
-}

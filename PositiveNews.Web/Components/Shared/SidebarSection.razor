@@ -2,11 +2,3 @@
     <h3 class="sidebar-section__heading">@Heading</h3>
     @ChildContent
 </section>
-
-@code {
-    [Parameter, EditorRequired]
-    public string Heading { get; set; } = string.Empty;
-
-    [Parameter, EditorRequired]
-    public RenderFragment? ChildContent { get; set; }
-}
