@@ -40,10 +40,7 @@ public sealed class AnthropicClient
     /// </summary>
     public AnthropicClient(HttpClient http, AnthropicOptions options)
     {
-        if (string.IsNullOrWhiteSpace(options.ApiKey))
-        {
-            throw new ArgumentException("AnthropicOptions.ApiKey is required.", nameof(options));
-        }
+        ArgumentException.ThrowIfNullOrWhiteSpace(options.ApiKey, nameof(options.ApiKey));
 
         _http = http;
         _model = options.Model;
@@ -85,7 +82,7 @@ public sealed class AnthropicClient
     {
         var content = await SendMessagesAsync(
             systemPrompt,
-            new object[] { new { role = "user", content = userMessage } },
+            [new { role = "user", content = userMessage }],
             tool,
             forceTool,
             ct);
@@ -123,7 +120,7 @@ public sealed class AnthropicClient
     {
         const int MaxToolCalls = 5;
 
-        var messages = new List<object> { new { role = "user", content = userMessage } };
+        List<object> messages = [new { role = "user", content = userMessage }];
 
         for (var i = 0; i <= MaxToolCalls; i++)
         {
