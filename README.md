@@ -9,8 +9,10 @@ servers) fit together in general. See `CLAUDE.md` for this project's own convent
 ## Layout
 
 - `PositiveNews.Cli` — fast console harness for iterating on agents without the web UI.
-- `PositiveNews.Agents` — Anthropic client, `IAgent<TIn,TOut>` agents, orchestrator (later
-  phases), MCP client wiring (`Mcp/NewsSearchMcpClient.cs`).
+- `PositiveNews.Agents` — Anthropic client, `IAgent<TIn,TOut>` agents (`HeadlineIdeaAgent`,
+  `SearchAgent`, `PositivityScorerAgent`, `SummarizerAgent`), `Orchestrator` (fan-out
+  scoring/summarizing with per-candidate failure isolation), MCP client wiring
+  (`Mcp/NewsSearchMcpClient.cs`).
 - `PositiveNews.McpServer` — custom MCP server exposing a `SearchNews` tool over stdio,
   backed by NewsAPI.org (`INewsSearchClient`, one-file provider swap).
 - `PositiveNews.Web` — Blazor Web App (Interactive Server), scaffolded as a shell in
@@ -20,19 +22,23 @@ servers) fit together in general. See `CLAUDE.md` for this project's own convent
   subagents for reviewing C# changes and JSON Schemas/MCP tool descriptions.
 - `.claude/skills/blazor-skill/` — Blazor component/coding conventions for
   `PositiveNews.Web` (code-behind split, `EventCallback`, `@key`, CSS isolation).
-- `.claude/settings.json` — empty settings, ready to wire up hooks.
-- `hooks/` — empty; reserved for future hook executables.
+- `.claude/skills/agent-scaffold/` — generates a new `IAgent<TIn,TOut>` stub matching the
+  Agent convention.
+- `hooks/AgentSchemaGuard/` — `PreToolUse` hook warning if a new/edited agent file is
+  missing a JSON Schema constant or forced `tool_choice` call; see `CLAUDE.md` for the
+  one-time `dotnet publish` setup step.
 - `.mcp.json` — registers `PositiveNews.McpServer` so it's directly pokeable from a
   Claude Code session during development.
 
 ## Status
 
-Phase 3 complete: `PositiveNews.Web` (Blazor Web App, Interactive Server) shell —
-two-column blog layout (article list + sidebar), hand-built reusable components
-(`Icon`, `ArticleCard`, `SearchBox`, `Sidebar`, etc.) under `Components/Shared`,
-hardcoded placeholder story data. The sidebar search box live-filters the list
-via the Interactive Server circuit — no page reload — confirming the render
-mode is genuinely active. Next: Phase 4 (multi-agent orchestration pipeline).
+Phase 4 complete: multi-agent orchestration pipeline. `SearchAgent` (Claude plans
+search queries, forced tool_choice) -> MCP `SearchNews` -> `PositivityScorerAgent`
+(fan-out, bounded concurrency, per-candidate failure isolation) -> top-N survivors
+-> `SummarizerAgent` -> `CuratedStory[]`. Verified live via `run-pipeline` (~30s
+end to end, real image URLs flowing through) and `score-test` (a deliberately
+positive headline scores 9/10 vs. a deliberately negative one at 0/10, confirming
+the scorer discriminates rather than rubber-stamping). Next: Phase 5 (persistence).
 See the phase-wise plan
 (`C:\Users\Ratnesh\.claude\plans\can-you-create-a-structured-rabin.md`) for the
 full roadmap.
@@ -54,4 +60,10 @@ dotnet run --project PositiveNews.Cli -- mcp-auto "find one uplifting recent new
 
 # Blazor Web App shell (placeholder data, no backend wiring yet)
 dotnet run --project PositiveNews.Web
+
+# Full orchestration pipeline: search -> score -> summarize -> curated stories
+dotnet run --project PositiveNews.Cli -- run-pipeline "optional topic hint"
+
+# Sanity-check PositivityScorerAgent alone against a hardcoded positive/negative pair
+dotnet run --project PositiveNews.Cli -- score-test
 ```

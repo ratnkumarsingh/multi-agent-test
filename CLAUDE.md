@@ -88,10 +88,32 @@ them unset to talk to Anthropic directly (the default).
 Each pipeline stage (search, score, summarize, translate, ...) is its own agent call
 rather than one long-lived conversation thread — this sidesteps context dilution (a
 long session's early instructions losing effective salience even below the token limit)
-by construction, not by periodic resets. Once persistence lands (Phase 4), pipeline runs
-are idempotent per calendar day and each step is traced for inspection/resumability.
+by construction, not by periodic resets. `Orchestrator`'s fan-out stages (scoring,
+summarizing) isolate per-candidate failures rather than aborting the whole batch — see
+`PositiveNews.Agents/Orchestrator.cs`. Once persistence lands (Phase 5), pipeline runs
+are additionally made idempotent per calendar day with each step traced for
+inspection/resumability.
 
 ## Verification loop
 
 `PositiveNews.Cli` is the fast iteration path — prefer `dotnet run --project
 PositiveNews.Cli -- <args>` over the Blazor UI while developing agent logic.
+
+## Claude Code tooling in this repo
+
+- **`.claude/skills/agent-scaffold/`** — generates a new `IAgent<TIn,TOut>` stub matching
+  the Agent convention above (`dotnet run --project ".claude/skills/agent-scaffold/tools/Scaffolder" -- --name <AgentName> ...`).
+- **`hooks/AgentSchemaGuard/`** — a `PreToolUse` hook (matched on `Write`/`Edit`/`Bash`, so
+  a shell redirect can't bypass it) that warns (`ask`, never `deny`) if a new/edited file
+  under `PositiveNews.Agents/Agents/` looks like an agent but is missing a JSON Schema
+  constant or a forced `tool_choice` call. **One-time setup after cloning** (the published
+  binary isn't committed — a self-contained win-x64 build is ~70MB and not delta-friendly
+  across rebuilds):
+  ```
+  dotnet publish hooks/AgentSchemaGuard -c Release -r win-x64 --self-contained -o hooks/AgentSchemaGuard/publish
+  ```
+  Re-run this after editing the hook's `Program.cs`. Registered in `.claude/settings.json`.
+- **`.claude/skills/blazor-skill/`** — Blazor component/coding conventions for
+  `PositiveNews.Web` (code-behind split, `EventCallback`, `@key`, CSS isolation).
+- **`.claude/agents/multi-agent-reviewer.md`, `.claude/agents/schema-reviewer.md`** —
+  subagents for reviewing C# diffs and JSON Schemas/MCP tool descriptions, respectively.

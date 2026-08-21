@@ -5,7 +5,7 @@ using ModelContextProtocol.Protocol;
 
 namespace PositiveNews.Agents.Mcp;
 
-public sealed record NewsArticle(string Title, string Url, string Source, DateTimeOffset? PublishedAt, string? Snippet);
+public sealed record NewsArticle(string Title, string Url, string Source, DateTimeOffset? PublishedAt, string? Snippet, string? ImageUrl);
 
 /// <summary>Mirrors <c>PositiveNews.McpServer.NewsSearchErrorCategory</c> — kept as an enum,
 /// not a bare string, so callers get compile-time exhaustiveness/typo-checking when
@@ -81,7 +81,7 @@ public sealed class NewsSearchMcpClient : IAsyncDisposable
 
         var dto = DeserializeResponse(result);
         var articles = dto.Articles
-            .Select(a => new NewsArticle(a.Title, a.Url, a.Source, a.PublishedAt, a.Snippet))
+            .Select(a => new NewsArticle(a.Title, a.Url, a.Source, a.PublishedAt, a.Snippet, a.ImageUrl))
             .ToList();
 
         var error = dto.Error is { } e ? new NewsSearchFailure(e.Category, e.Retryable, e.Message) : null;
@@ -123,7 +123,8 @@ public sealed class NewsSearchMcpClient : IAsyncDisposable
         string Url,
         string Source,
         DateTimeOffset? PublishedAt,
-        string? Snippet);
+        string? Snippet,
+        string? ImageUrl);
 
     private sealed record NewsSearchErrorDto(NewsSearchErrorCategory Category, bool Retryable, string Message);
 }

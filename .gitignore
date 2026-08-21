@@ -12,6 +12,11 @@ obj/
 # Local Claude Code settings
 .claude/settings.local.json
 
+# Published self-contained hook binaries (e.g. hooks/AgentSchemaGuard/publish/*.exe) —
+# regenerable via `dotnet publish`, not committed since a self-contained win-x64 build is
+# ~70MB and not delta-friendly across rebuilds. See CLAUDE.md for the one-time build step.
+hooks/*/publish/
+
 # npx-skills-installed content: .agents/skills/<name> is the canonical store, and
 # .claude/skills/<name> for an installed (not hand-authored) skill is meant to be a
 # symlink into it. This checkout has core.symlinks=false, so git would otherwise walk

@@ -110,7 +110,8 @@ public sealed class NewsApiOrgClient : INewsSearchClient
                     a.Url!,
                     a.Source?.Name ?? "Unknown",
                     a.PublishedAt,
-                    a.Description))
+                    a.Description,
+                    a.UrlToImage))
                 .ToList();
 
             return new NewsSearchResponse(articles, payload.TotalResults, Error: null);
@@ -141,7 +142,8 @@ public sealed class NewsApiOrgClient : INewsSearchClient
         [property: JsonPropertyName("title")] string? Title,
         [property: JsonPropertyName("description")] string? Description,
         [property: JsonPropertyName("url")] string? Url,
-        [property: JsonPropertyName("publishedAt")] DateTimeOffset? PublishedAt);
+        [property: JsonPropertyName("publishedAt")] DateTimeOffset? PublishedAt,
+        [property: JsonPropertyName("urlToImage")] string? UrlToImage);
 
     private sealed record NewsApiSource([property: JsonPropertyName("name")] string? Name);
 }
