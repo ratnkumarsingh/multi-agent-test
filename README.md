@@ -17,7 +17,8 @@ servers) fit together in general. See `CLAUDE.md` for this project's own convent
   backed by NewsAPI.org (`INewsSearchClient`, one-file provider swap).
 - `PositiveNews.Web` — Blazor Web App (Interactive Server), scaffolded as a shell in
   Phase 3 with hardcoded placeholder data; wired to real data in Phase 6.
-- `PositiveNews.Core` — added once persistence lands (Phase 5).
+- `PositiveNews.Core` — `PositiveNewsDbContext` + entities (`PipelineRun`, `PipelineStep`,
+  `PipelineCandidate`, `NewsStory`) over SQLite, one file at the repo root.
 - `.claude/agents/multi-agent-reviewer.md`, `.claude/agents/schema-reviewer.md` — starter
   subagents for reviewing C# changes and JSON Schemas/MCP tool descriptions.
 - `.claude/skills/blazor-skill/` — Blazor component/coding conventions for
@@ -32,14 +33,19 @@ servers) fit together in general. See `CLAUDE.md` for this project's own convent
 
 ## Status
 
-Phase 4 complete: multi-agent orchestration pipeline. `SearchAgent` (Claude plans
-search queries, forced tool_choice) -> MCP `SearchNews` -> `PositivityScorerAgent`
-(fan-out, bounded concurrency, per-candidate failure isolation) -> top-N survivors
--> `SummarizerAgent` -> `CuratedStory[]`. Verified live via `run-pipeline` (~30s
-end to end, real image URLs flowing through) and `score-test` (a deliberately
-positive headline scores 9/10 vs. a deliberately negative one at 0/10, confirming
-the scorer discriminates rather than rubber-stamping). Next: Phase 5 (persistence).
-See the phase-wise plan
+Phase 5 complete: persistence & reliability. `Orchestrator` now persists every stage to
+SQLite (`PositiveNews.Core`) incrementally rather than only returning an in-memory
+result — a `PipelineRun` row anchors idempotency per calendar day, `PipelineCandidate`
+rows make the run resumable at the individual-candidate level (a rerun skips
+already-searched/scored/summarized work), and `PipelineStep` rows trace every agent
+invocation. Each agent call is wrapped in bounded retry-with-backoff. All three verify
+scenarios confirmed live: same-day rerun after completion is a 0.6s no-op; killing the
+process mid-scoring and rerunning resumed from exactly where it left off (skipped search
+entirely, only scored the remaining unscored candidates); a forced network failure
+retried, then failed cleanly with the run marked `Failed` rather than hanging, and a
+subsequent real rerun resumed correctly from that `Failed` state. `PositiveNews.Cli`
+gained `history` (recent runs, or a full step trace for one run). Next: Phase 6 (wire
+the Blazor shell to this real data). See the phase-wise plan
 (`C:\Users\Ratnesh\.claude\plans\can-you-create-a-structured-rabin.md`) for the
 full roadmap.
 
@@ -66,4 +72,7 @@ dotnet run --project PositiveNews.Cli -- run-pipeline "optional topic hint"
 
 # Sanity-check PositivityScorerAgent alone against a hardcoded positive/negative pair
 dotnet run --project PositiveNews.Cli -- score-test
+
+# List recent pipeline runs (or `history <id>` for one run's full step trace)
+dotnet run --project PositiveNews.Cli -- history
 ```

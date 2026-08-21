@@ -1,10 +1,14 @@
 using System.Diagnostics;
 using System.Reflection;
 using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using PositiveNews.Agents;
 using PositiveNews.Agents.Agents;
 using PositiveNews.Agents.Mcp;
+using PositiveNews.Core.Data;
+using PositiveNews.Core.Entities;
 
 var config = new ConfigurationBuilder()
     .AddUserSecrets(Assembly.GetExecutingAssembly())
@@ -20,12 +24,45 @@ return mode switch
     "mcp-auto" => await RunMcpAutoAsync(config, rest),
     "run-pipeline" => await RunPipelineAsync(config, rest),
     "score-test" => await RunScoreTestAsync(config),
+    "history" => await RunHistoryAsync(rest),
     "headline" => await RunHeadlineAsync(config, rest),
     _ => await RunHeadlineAsync(config, args), // backward-compatible default: whole args = topic
 };
 
 static string McpServerProjectPath() =>
     Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "PositiveNews.McpServer");
+
+static string RepoRootPath(string relativePath) =>
+    Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", relativePath);
+
+/// <summary>
+/// One SQLite file at the repo root, shared by every project that touches persistence
+/// (PositiveNews.Cli now, PositiveNews.Web from Phase 6) — resolved via AppContext.BaseDirectory
+/// rather than a relative "positivenews.db" path so it lands at the same physical file
+/// regardless of which project's process is actually running, and which directory it was
+/// launched from.
+/// </summary>
+static IDbContextFactory<PositiveNewsDbContext> CreateDbContextFactory()
+{
+    var dbPath = RepoRootPath("positivenews.db");
+    var connectionString = $"Data Source={dbPath};Default Timeout=10";
+
+    var services = new ServiceCollection();
+    services.AddDbContextFactory<PositiveNewsDbContext>(options => options.UseSqlite(connectionString));
+    return services.BuildServiceProvider().GetRequiredService<IDbContextFactory<PositiveNewsDbContext>>();
+}
+
+/// <summary>Applies pending migrations and switches SQLite to WAL mode (persisted in the
+/// database file itself, so this only has real effect the first time) — needed because
+/// Orchestrator's fan-out stages open several short-lived DbContexts concurrently, and the
+/// default rollback-journal mode serializes writers hard enough to risk "database is
+/// locked" under that pattern.</summary>
+static async Task EnsureDatabaseReadyAsync(IDbContextFactory<PositiveNewsDbContext> factory, CancellationToken ct)
+{
+    await using var db = await factory.CreateDbContextAsync(ct);
+    await db.Database.MigrateAsync(ct);
+    await db.Database.ExecuteSqlRawAsync("PRAGMA journal_mode=WAL;", ct);
+}
 
 /// <summary>Binds AnthropicOptions and prints a standard error if the API key is missing.
 /// Returns null on failure so callers can just <c>if (options is null) return 1;</c>.</summary>
@@ -174,10 +211,14 @@ static async Task<int> RunPipelineAsync(IConfiguration config, string[] topicArg
 
     await using var mcp = await NewsSearchMcpClient.ConnectAsync(McpServerProjectPath());
 
+    var dbFactory = CreateDbContextFactory();
+    await EnsureDatabaseReadyAsync(dbFactory, CancellationToken.None);
+
     var orchestrator = new Orchestrator(
         new SearchAgent(client, mcp),
         new PositivityScorerAgent(client),
-        new SummarizerAgent(client));
+        new SummarizerAgent(client),
+        dbFactory);
 
     var progress = new Progress<string>(Console.WriteLine);
 
@@ -257,6 +298,79 @@ static async Task<int> RunScoreTestAsync(IConfiguration config)
 
     Console.WriteLine("WARNING: scorer did not clearly discriminate — review PositivityScorerAgent's prompt.");
     return 1;
+}
+
+/// <summary>
+/// `history` lists recent PipelineRuns; `history &lt;runId&gt;` shows that run's full
+/// PipelineStep trace — the inspectable-history half of Phase 5's reliability posture.
+/// </summary>
+static async Task<int> RunHistoryAsync(string[] args)
+{
+    var dbFactory = CreateDbContextFactory();
+    await EnsureDatabaseReadyAsync(dbFactory, CancellationToken.None);
+    await using var db = await dbFactory.CreateDbContextAsync();
+
+    if (args.Length > 0 && int.TryParse(args[0], out var runId))
+    {
+        var run = await db.PipelineRuns.FirstOrDefaultAsync(r => r.Id == runId);
+        if (run is null)
+        {
+            Console.Error.WriteLine($"No PipelineRun with id {runId}.");
+            return 1;
+        }
+
+        Console.WriteLine($"PipelineRun #{run.Id} — {run.RunDate:yyyy-MM-dd} [{run.Status}]");
+        if (!string.IsNullOrWhiteSpace(run.TopicHint))
+        {
+            Console.WriteLine($"Topic hint: {run.TopicHint}");
+        }
+        Console.WriteLine();
+
+        // Order by Id, not Timestamp — SQLite's EF provider can't ORDER BY a DateTimeOffset
+        // server-side, and Id (auto-increment) already reflects insertion/chronological order.
+        var steps = await db.PipelineSteps
+            .Where(s => s.PipelineRunId == runId)
+            .OrderBy(s => s.Id)
+            .ToListAsync();
+
+        foreach (var step in steps)
+        {
+            var label = step.ItemLabel is { } l ? $" \"{l}\"" : "";
+            var retry = step.RetryCount > 0 ? $" (after {step.RetryCount} retr{(step.RetryCount == 1 ? "y" : "ies")})" : "";
+            Console.WriteLine($"  [{step.Timestamp:HH:mm:ss}] {step.AgentName}{label} — {step.Status}{retry}");
+            if (step.ErrorMessage is { } err)
+            {
+                Console.WriteLine($"      {err}");
+            }
+        }
+
+        return 0;
+    }
+
+    var runs = await db.PipelineRuns.OrderByDescending(r => r.RunDate).Take(10).ToListAsync();
+    if (runs.Count == 0)
+    {
+        Console.WriteLine("No pipeline runs recorded yet.");
+        return 0;
+    }
+
+    foreach (var run in runs)
+    {
+        var storyCount = await db.NewsStories.CountAsync(s => s.PipelineRunId == run.Id);
+        var stepCount = await db.PipelineSteps.CountAsync(s => s.PipelineRunId == run.Id);
+        var failedSteps = await db.PipelineSteps.CountAsync(s => s.PipelineRunId == run.Id && s.Status == PipelineStepStatus.Failed);
+
+        Console.WriteLine($"#{run.Id} {run.RunDate:yyyy-MM-dd} [{run.Status}] — {storyCount} stories, {stepCount} steps ({failedSteps} failed)");
+        if (!string.IsNullOrWhiteSpace(run.TopicHint))
+        {
+            Console.WriteLine($"   topic hint: {run.TopicHint}");
+        }
+        var completedPart = run.CompletedAt is { } c ? $", completed {c:u}" : "";
+        Console.WriteLine($"   started {run.StartedAt:u}{completedPart}");
+    }
+    Console.WriteLine("\nRun `history <id>` for a run's full step trace.");
+
+    return 0;
 }
 
 static void PrintResult(NewsSearchResult result)
