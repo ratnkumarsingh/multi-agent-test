@@ -29,7 +29,8 @@ public sealed record NewsArticle(
     string Url,
     string Source,
     DateTimeOffset? PublishedAt,
-    string? Snippet);
+    string? Snippet,
+    string? ImageUrl);
 
 /// <summary>
 /// The one envelope <c>SearchNews</c> ever returns. <see cref="TotalCount"/> is the
