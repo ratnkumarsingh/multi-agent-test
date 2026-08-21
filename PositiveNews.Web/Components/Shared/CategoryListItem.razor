@@ -1,0 +1,12 @@
+<a class="category-item" href="@Href">
+    <span>@Category.Name</span>
+    <span class="category-item__count">(@Category.Count)</span>
+</a>
+
+@code {
+    [Parameter, EditorRequired]
+    public PlaceholderCategory Category { get; set; } = null!;
+
+    [Parameter]
+    public string Href { get; set; } = "#";
+}

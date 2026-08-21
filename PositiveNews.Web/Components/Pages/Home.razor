@@ -1,0 +1,24 @@
+@page "/"
+
+<PageTitle>PositiveNews</PageTitle>
+
+<div class="home-layout">
+    <main class="home-layout__main">
+        @if (FilteredStories.Count == 0)
+        {
+            <p class="home-layout__empty">No stories match "@SearchQuery".</p>
+        }
+        else
+        {
+            @foreach (var story in FilteredStories)
+            {
+                <ArticleCard @key="story.Title" Story="story" />
+            }
+        }
+    </main>
+
+    <Sidebar Categories="Categories"
+             PopularStories="PopularStories"
+             Tags="Tags"
+             @bind-SearchQuery="SearchQuery" />
+</div>

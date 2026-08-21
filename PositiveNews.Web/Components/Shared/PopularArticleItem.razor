@@ -1,0 +1,16 @@
+<a class="popular-item" href="#">
+    <StoryAvatar Gradient="@Story.AccentGradient" Size="StoryAvatarSize.Small" />
+    <span class="popular-item__body">
+        <span class="popular-item__title">@Story.Title</span>
+        <span class="popular-item__meta">
+            <MetaItem Kind="IconKind.Calendar" Text="@Story.PublishedOn.ToString("MMM d, yyyy")" />
+            <MetaItem Kind="IconKind.Person" Text="@Story.Author" />
+            <MetaItem Kind="IconKind.Eye" Text="@Story.ViewCount.ToString()" />
+        </span>
+    </span>
+</a>
+
+@code {
+    [Parameter, EditorRequired]
+    public PlaceholderPopularStory Story { get; set; } = null!;
+}

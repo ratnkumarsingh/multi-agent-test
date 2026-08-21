@@ -1,0 +1,9 @@
+<a class="tag-chip" href="@Href">@Text</a>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Text { get; set; } = string.Empty;
+
+    [Parameter]
+    public string Href { get; set; } = "#";
+}

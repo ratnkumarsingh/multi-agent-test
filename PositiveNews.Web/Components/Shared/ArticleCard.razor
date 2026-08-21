@@ -1,0 +1,25 @@
+<article class="article-card">
+    <StoryAvatar Gradient="@Story.AccentGradient" Size="StoryAvatarSize.Large" />
+
+    <div class="article-card__body">
+        <h2 class="article-card__title"><a href="#">@Story.Title</a></h2>
+
+        <div class="article-card__meta">
+            <MetaItem Kind="IconKind.Calendar" Text="@Story.PublishedOn.ToString("MMM d, yyyy")" />
+            <MetaItem Kind="IconKind.Folder" Text="@Story.Category" />
+            <MetaItem Kind="IconKind.Comment" Text="@CommentLabel" />
+        </div>
+
+        <p class="article-card__excerpt">@Story.Excerpt</p>
+
+        <ReadMoreLink />
+    </div>
+</article>
+
+@code {
+    [Parameter, EditorRequired]
+    public PlaceholderStory Story { get; set; } = null!;
+
+    private string CommentLabel =>
+        Story.CommentCount == 1 ? "1 Comment" : $"{Story.CommentCount} Comments";
+}
