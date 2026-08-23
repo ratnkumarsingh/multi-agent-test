@@ -166,6 +166,29 @@ news cycle either — expected, since this depends on both the query-planning be
 probabilistic and on what's actually being published that day, not something worth forcing
 via repeated paid pipeline runs just to prove out.
 
+**`SearchAgent`'s system prompt was substantially expanded, mid-session, outside my edits**
+(the "Global Positive News Research Agent" brief — global-coverage mandates, an explicit
+positive/constructive-news taxonomy, source-quality standards, a verification checklist,
+example search-term combinations). This looked like a deliberate manual edit while I was
+working, similar to earlier out-of-band additions to `TranslationAgent`'s prompt — kept as
+current state rather than reverted, per this repo's working convention. Two real fixes
+applied on top: (1) a formatting glitch where my own religion/faith/spirituality sentence
+ran directly into the new content with no paragraph break; (2) more substantively, the new
+prompt's own category list and example search terms didn't actually mention
+religion/faith/spirituality anywhere despite that being the whole point of the request that
+prompted it — added a bullet to both, phrased consistently with `PositivityScorerAgent`'s
+wording (interfaith harmony/faith-driven service count, religious conflict/controversy
+doesn't). **One thing flagged but left alone, worth knowing about**: this expanded
+prompt's "OUTPUT" section describes an 8-field per-story format (headline, country/region,
+category, publication date, summary, why-positive, source, primary source) that doesn't
+match what this agent actually returns — `SearchAgent`'s forced-tool schema only ever asks
+for `queries: string[]` (3-5 search query strings; picking the actual stories is
+`PositivityScorerAgent`/`SummarizerAgent`'s job downstream). Harmless in practice —
+`forceTool: true` structurally guarantees the real output shape regardless of what the
+prompt describes, live-verified via a real pipeline run producing valid results — but the
+prompt text itself is describing a different, more end-to-end agent than this one actually
+is.
+
 ## Secrets
 
 `AnthropicClient` is configured from `AnthropicOptions` (bound from the `"Anthropic"`

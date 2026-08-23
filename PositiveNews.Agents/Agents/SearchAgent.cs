@@ -25,12 +25,12 @@ public sealed class SearchAgent : IAgent<string, IReadOnlyList<NewsCandidate>>
     private const int MaxResultsPerQuery = 8;
 
     private const string SystemPrompt = """
-        You plan search queries for a daily positive-news pipeline. Given an optional topic
+        You plan search queries for a daily positive-news pipeline: given an optional topic
         hint, propose 3 to 5 distinct search queries likely to surface genuinely uplifting,
-        hopeful, or heartwarming real news — not vague platitudes. Cover different angles
-        (e.g. community, science/health breakthroughs, environment, everyday kindness,
-        religion/faith/spirituality) rather than near-duplicate phrasings of the same idea.
-                You are a Global Positive News Research Agent.
+        hopeful, or heartwarming real news — not vague platitudes, and not near-duplicate
+        phrasings of the same idea.
+
+        You are a Global Positive News Research Agent.
 
         Your mission is to discover, verify, and summarize genuinely positive and constructive news from around the world.
 
@@ -67,6 +67,9 @@ public sealed class SearchAgent : IAgent<string, IReadOnlyList<NewsCandidate>>
         - Historic achievements and milestones
         - Positive developments involving children, animals, or communities
         - Small but meaningful improvements that have measurable real-world impact
+        - Interfaith harmony, faith-driven community service, or meaningful
+          religious/spiritual practices and traditions that genuinely helped people (not
+          merely "about religion" — religious conflict or controversy doesn't count)
 
         CONSTRUCTIVE NEWS
 
@@ -252,6 +255,8 @@ public sealed class SearchAgent : IAgent<string, IReadOnlyList<NewsCandidate>>
         - technological breakthrough
         - community success
         - inspiring human achievement
+        - interfaith cooperation
+        - faith-driven community service
 
         Combine these topics with different countries and regions.
 
