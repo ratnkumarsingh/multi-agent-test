@@ -149,6 +149,23 @@ was already the binding constraint that run, not the search API's date window, a
 queried — so don't assume this alone increases candidate count run-to-run; its value is in
 reliably covering the declared month rather than an ambiguous implicit default.
 
+**Religion/faith/spirituality is an eligible positive-news angle**: `SearchAgent`'s
+query-planning prompt lists it alongside its other example angles (community,
+science/health, environment, everyday kindness) — Claude picks 3-5 queries per run, so this
+isn't guaranteed to be covered on any single run, same as the other example angles aren't.
+`PositivityScorerAgent` was updated too, not just `SearchAgent` — finding such a candidate
+would be pointless if the scorer didn't recognize it as legitimate positive content. The
+scorer's instruction is explicit that this only applies to genuinely uplifting
+religion/faith stories judged by the same bar as anything else (interfaith harmony, a
+faith-driven act of service, a spiritual practice that helped someone) — coverage of
+religious conflict or controversy stays low-scoring regardless of topic, exactly like any
+other negative story. **Not fully live-verified end-to-end**: a reset+rerun after this
+change didn't happen to plan a religion-themed query, and a direct `mcp-direct` probe with
+religion/spirituality keywords didn't turn up genuinely on-topic content in today's actual
+news cycle either — expected, since this depends on both the query-planning being
+probabilistic and on what's actually being published that day, not something worth forcing
+via repeated paid pipeline runs just to prove out.
+
 ## Secrets
 
 `AnthropicClient` is configured from `AnthropicOptions` (bound from the `"Anthropic"`
