@@ -3,7 +3,7 @@ using PositiveNews.Core.Entities;
 
 namespace PositiveNews.Web.Components.Shared;
 
-public partial class ArticleCard
+public partial class TopRatedItem
 {
     [Parameter, EditorRequired]
     public NewsStory Story { get; set; } = null!;

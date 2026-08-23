@@ -1,29 +1,11 @@
 <aside class="sidebar">
     <SearchBox Query="@SearchQuery" QueryChanged="HandleQueryChanged" />
 
-    <SidebarSection Heading="Categories">
-        <div class="sidebar__category-list">
-            @foreach (var category in Categories)
+    <SidebarSection Heading="Top Rated">
+        <div class="sidebar__top-rated-list">
+            @foreach (var story in TopRatedStories)
             {
-                <CategoryListItem @key="category.Name" Category="category" />
-            }
-        </div>
-    </SidebarSection>
-
-    <SidebarSection Heading="Popular Articles">
-        <div class="sidebar__popular-list">
-            @foreach (var story in PopularStories)
-            {
-                <PopularArticleItem @key="story.Title" Story="story" />
-            }
-        </div>
-    </SidebarSection>
-
-    <SidebarSection Heading="Tag Cloud">
-        <div class="sidebar__tag-cloud">
-            @foreach (var tag in Tags)
-            {
-                <TagChip @key="tag" Text="@tag" />
+                <TopRatedItem @key="story.Id" Story="story" />
             }
         </div>
     </SidebarSection>

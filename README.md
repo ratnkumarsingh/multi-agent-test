@@ -15,8 +15,9 @@ servers) fit together in general. See `CLAUDE.md` for this project's own convent
   (`Mcp/NewsSearchMcpClient.cs`).
 - `PositiveNews.McpServer` — custom MCP server exposing a `SearchNews` tool over stdio,
   backed by NewsAPI.org (`INewsSearchClient`, one-file provider swap).
-- `PositiveNews.Web` — Blazor Web App (Interactive Server), scaffolded as a shell in
-  Phase 3 with hardcoded placeholder data; wired to real data in Phase 6.
+- `PositiveNews.Web` — Blazor Web App (Interactive Server), reading real curated stories
+  from `PositiveNews.Core` (`Home.razor` — story list + "Top Rated" sidebar by score;
+  `Story.razor` — detail page). Read-only — no run-triggering yet (Phase 7).
 - `PositiveNews.Core` — `PositiveNewsDbContext` + entities (`PipelineRun`, `PipelineStep`,
   `PipelineCandidate`, `NewsStory`) over SQLite, one file at the repo root.
 - `.claude/agents/multi-agent-reviewer.md`, `.claude/agents/schema-reviewer.md` — starter
@@ -33,19 +34,16 @@ servers) fit together in general. See `CLAUDE.md` for this project's own convent
 
 ## Status
 
-Phase 5 complete: persistence & reliability. `Orchestrator` now persists every stage to
-SQLite (`PositiveNews.Core`) incrementally rather than only returning an in-memory
-result — a `PipelineRun` row anchors idempotency per calendar day, `PipelineCandidate`
-rows make the run resumable at the individual-candidate level (a rerun skips
-already-searched/scored/summarized work), and `PipelineStep` rows trace every agent
-invocation. Each agent call is wrapped in bounded retry-with-backoff. All three verify
-scenarios confirmed live: same-day rerun after completion is a 0.6s no-op; killing the
-process mid-scoring and rerunning resumed from exactly where it left off (skipped search
-entirely, only scored the remaining unscored candidates); a forced network failure
-retried, then failed cleanly with the run marked `Failed` rather than hanging, and a
-subsequent real rerun resumed correctly from that `Failed` state. `PositiveNews.Cli`
-gained `history` (recent runs, or a full step trace for one run). Next: Phase 6 (wire
-the Blazor shell to this real data). See the phase-wise plan
+Phase 6 complete: the Blazor shell now reads real data. `Home.razor` queries the latest
+completed `PipelineRun`'s `NewsStory` rows instead of Phase 3's hardcoded placeholders;
+`Story.razor` is a new detail page. The sidebar's Categories and Tag Cloud sections were
+dropped (no category/tag data exists anywhere in the pipeline — nothing was faked to fill
+them); "Popular Articles" was repurposed as "Top Rated", backed by the real `Score` field
+instead of a fabricated view count. `StoryAvatar` now shows a story's real image when
+NewsAPI provided one, falling back to a deterministic gradient (keyed off the headline)
+when it didn't — verified live with a mix of both in the same run. Next: Phase 7 (daily
+scheduling + live run progress — the "run now" button and background scheduler this
+phase deliberately left out). See the phase-wise plan
 (`C:\Users\Ratnesh\.claude\plans\can-you-create-a-structured-rabin.md`) for the
 full roadmap.
 
@@ -64,7 +62,7 @@ dotnet run --project PositiveNews.Cli -- mcp-direct "search query"
 # Claude decides (tool_choice: auto) whether to call SearchNews
 dotnet run --project PositiveNews.Cli -- mcp-auto "find one uplifting recent news story"
 
-# Blazor Web App shell (placeholder data, no backend wiring yet)
+# Blazor Web App — reads real curated stories from positivenews.db
 dotnet run --project PositiveNews.Web
 
 # Full orchestration pipeline: search -> score -> summarize -> curated stories

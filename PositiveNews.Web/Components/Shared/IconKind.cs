@@ -7,5 +7,5 @@ public enum IconKind
     Comment,
     Search,
     Person,
-    Eye,
+    Star,
 }

@@ -1,0 +1,35 @@
+@page "/story/{Id:int}"
+
+<PageTitle>@(CurrentStory?.Headline ?? "Story not found")</PageTitle>
+
+<div class="story-page">
+    <a class="story-page__back" href="/">&larr; Back to all stories</a>
+
+    @if (CurrentStory is null)
+    {
+        <p class="story-page__not-found">
+            No story found with that id — it may belong to a different pipeline run, or the
+            database was reset.
+        </p>
+    }
+    else
+    {
+        <article>
+            <StoryAvatar ImageUrl="@CurrentStory.ImageUrl" Seed="@CurrentStory.Headline" Size="StoryAvatarSize.Large" />
+
+            <h1 class="story-page__title">@CurrentStory.Headline</h1>
+
+            <div class="story-page__meta">
+                <MetaItem Kind="IconKind.Calendar" Text="@PublishedLabel" />
+                <MetaItem Kind="IconKind.Folder" Text="@CurrentStory.Source" />
+                <MetaItem Kind="IconKind.Star" Text="@($"{CurrentStory.Score}/10")" />
+            </div>
+
+            <p class="story-page__body">@CurrentStory.Body</p>
+
+            <a class="story-page__source-link" href="@CurrentStory.SourceUrl" target="_blank" rel="noopener noreferrer">
+                Read the original article &rarr;
+            </a>
+        </article>
+    }
+</div>
