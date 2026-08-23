@@ -3,18 +3,7 @@
     flex-direction: column;
 }
 
-.sidebar__category-list {
+.sidebar__top-rated-list {
     display: flex;
     flex-direction: column;
-}
-
-.sidebar__popular-list {
-    display: flex;
-    flex-direction: column;
-}
-
-.sidebar__tag-cloud {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.6rem;
 }

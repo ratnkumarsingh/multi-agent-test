@@ -87,8 +87,8 @@ them unset to talk to Anthropic directly (the default).
 
 One SQLite file at the repo root, `positivenews.db` (gitignored — local state, not shared),
 resolved via `AppContext.BaseDirectory` rather than a relative path so every project that
-touches it (`PositiveNews.Cli` now, `PositiveNews.Web` from Phase 6) lands on the same
-physical file regardless of which process is running or its working directory. `DbSet`s
+touches it (`PositiveNews.Cli` and `PositiveNews.Web` both) lands on the same physical
+file regardless of which process is running or its working directory. `DbSet`s
 live on `PositiveNewsDbContext` (`PositiveNews.Core/Data/`); `IDbContextFactory<PositiveNewsDbContext>`
 (not a single shared `DbContext`) is what callers inject, since `DbContext` isn't
 thread-safe and `Orchestrator`'s fan-out stages need several short-lived contexts open
@@ -99,7 +99,17 @@ New migration after an entity change:
 dotnet ef migrations add <Name> --project PositiveNews.Core
 ```
 (`PositiveNewsDbContextDesignTimeFactory` lets this run without needing `--startup-project`.)
-Migrations apply automatically at startup (`Database.MigrateAsync()`), not manually.
+Migrations apply automatically at startup in both `PositiveNews.Cli` (before a
+DB-touching command runs) and `PositiveNews.Web` (`Program.cs`, before `app.Run()`) — not
+manually.
+
+**Don't fabricate UI data for a field the pipeline doesn't actually produce.** Phase 3's
+placeholder shell had Categories, a Tag Cloud, and view-counted "Popular Articles" —
+Phase 6 dropped Categories/Tags entirely and repurposed "Popular" into "Top Rated" backed
+by the real `Score` field, rather than inventing a category taxonomy or fake view counts
+just to keep the Phase 3 layout intact. If a later phase wants any of those back, the
+right fix is a real upstream source for the field (an agent that assigns a category, an
+actual view-tracking mechanism) — not a plausible-looking placeholder in the view layer.
 
 ## Reliability posture
 

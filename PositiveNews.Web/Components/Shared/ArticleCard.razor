@@ -1,17 +1,17 @@
 <article class="article-card">
-    <StoryAvatar Gradient="@Story.AccentGradient" Size="StoryAvatarSize.Large" />
+    <StoryAvatar ImageUrl="@Story.ImageUrl" Seed="@Story.Headline" Size="StoryAvatarSize.Large" />
 
     <div class="article-card__body">
-        <h2 class="article-card__title"><a href="#">@Story.Title</a></h2>
+        <h2 class="article-card__title"><a href="@StoryHref">@Story.Headline</a></h2>
 
         <div class="article-card__meta">
-            <MetaItem Kind="IconKind.Calendar" Text="@Story.PublishedOn.ToString("MMM d, yyyy")" />
-            <MetaItem Kind="IconKind.Folder" Text="@Story.Category" />
-            <MetaItem Kind="IconKind.Comment" Text="@CommentLabel" />
+            <MetaItem Kind="IconKind.Calendar" Text="@PublishedLabel" />
+            <MetaItem Kind="IconKind.Folder" Text="@Story.Source" />
+            <MetaItem Kind="IconKind.Star" Text="@($"{Story.Score}/10")" />
         </div>
 
-        <p class="article-card__excerpt">@Story.Excerpt</p>
+        <p class="article-card__excerpt">@Story.Body</p>
 
-        <ReadMoreLink />
+        <ReadMoreLink Href="@StoryHref" />
     </div>
 </article>

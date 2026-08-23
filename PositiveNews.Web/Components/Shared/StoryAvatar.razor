@@ -1,1 +1,8 @@
-<span class="story-avatar story-avatar--@Size.ToString().ToLowerInvariant()" style="background-image:@Gradient" aria-hidden="true"></span>
+@if (!string.IsNullOrWhiteSpace(ImageUrl))
+{
+    <img class="story-avatar story-avatar--@Size.ToString().ToLowerInvariant()" src="@ImageUrl" alt="" aria-hidden="true" />
+}
+else
+{
+    <span class="story-avatar story-avatar--@Size.ToString().ToLowerInvariant()" style="background-image:@FallbackGradient" aria-hidden="true"></span>
+}

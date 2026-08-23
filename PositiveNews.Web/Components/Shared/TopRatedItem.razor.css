@@ -1,4 +1,4 @@
-.popular-item {
+.top-rated-item {
     display: flex;
     gap: 0.85rem;
     align-items: flex-start;
@@ -7,14 +7,14 @@
     padding: 0.6rem 0;
 }
 
-.popular-item__body {
+.top-rated-item__body {
     display: flex;
     flex-direction: column;
     gap: 0.35rem;
     min-width: 0;
 }
 
-.popular-item__title {
+.top-rated-item__title {
     font-size: 0.875rem;
     font-weight: 600;
     line-height: 1.35;
@@ -25,11 +25,11 @@
     overflow: hidden;
 }
 
-.popular-item:hover .popular-item__title {
+.top-rated-item:hover .top-rated-item__title {
     color: var(--color-accent);
 }
 
-.popular-item__meta {
+.top-rated-item__meta {
     display: flex;
     flex-wrap: wrap;
     gap: 0.6rem;

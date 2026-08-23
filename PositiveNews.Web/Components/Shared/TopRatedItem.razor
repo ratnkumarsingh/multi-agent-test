@@ -1,0 +1,11 @@
+<a class="top-rated-item" href="@StoryHref">
+    <StoryAvatar ImageUrl="@Story.ImageUrl" Seed="@Story.Headline" Size="StoryAvatarSize.Small" />
+    <span class="top-rated-item__body">
+        <span class="top-rated-item__title">@Story.Headline</span>
+        <span class="top-rated-item__meta">
+            <MetaItem Kind="IconKind.Calendar" Text="@PublishedLabel" />
+            <MetaItem Kind="IconKind.Person" Text="@Story.Source" />
+            <MetaItem Kind="IconKind.Star" Text="@($"{Story.Score}/10")" />
+        </span>
+    </span>
+</a>

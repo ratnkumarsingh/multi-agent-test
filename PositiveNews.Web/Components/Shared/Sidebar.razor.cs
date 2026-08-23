@@ -1,18 +1,12 @@
 using Microsoft.AspNetCore.Components;
-using PositiveNews.Web.Models.Placeholder;
+using PositiveNews.Core.Entities;
 
 namespace PositiveNews.Web.Components.Shared;
 
 public partial class Sidebar
 {
     [Parameter, EditorRequired]
-    public IReadOnlyList<PlaceholderCategory> Categories { get; set; } = [];
-
-    [Parameter, EditorRequired]
-    public IReadOnlyList<PlaceholderPopularStory> PopularStories { get; set; } = [];
-
-    [Parameter, EditorRequired]
-    public IReadOnlyList<string> Tags { get; set; } = [];
+    public IReadOnlyList<NewsStory> TopRatedStories { get; set; } = [];
 
     [Parameter]
     public string SearchQuery { get; set; } = string.Empty;
