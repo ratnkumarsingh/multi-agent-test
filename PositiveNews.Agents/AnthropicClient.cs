@@ -72,12 +72,16 @@ public sealed class AnthropicClient
     /// <c>tool_choice</c> is pinned to the tool so Claude always answers via a single
     /// structured tool_use block rather than free text. Set it false only when Claude
     /// should genuinely decide whether to call the tool at all (e.g. an MCP search tool).
+    /// <paramref name="model"/> overrides the client's configured default model for this
+    /// call only — for agents that deliberately run on a different (typically cheaper)
+    /// model than the rest of the pipeline, e.g. <c>TranslationAgent</c>.
     /// </summary>
     public async Task<JsonElement> CallToolAsync(
         string systemPrompt,
         string userMessage,
         AnthropicToolSpec tool,
         bool forceTool = true,
+        string? model = null,
         CancellationToken ct = default)
     {
         var content = await SendMessagesAsync(
@@ -85,6 +89,7 @@ public sealed class AnthropicClient
             [new { role = "user", content = userMessage }],
             tool,
             forceTool,
+            model,
             ct);
 
         foreach (var block in content.EnumerateArray())
@@ -124,7 +129,7 @@ public sealed class AnthropicClient
 
         for (var i = 0; i <= MaxToolCalls; i++)
         {
-            var content = await SendMessagesAsync(systemPrompt, messages, tool, forceTool: false, ct);
+            var content = await SendMessagesAsync(systemPrompt, messages, tool, forceTool: false, model: null, ct);
 
             JsonElement? toolUse = null;
             foreach (var block in content.EnumerateArray())
@@ -174,6 +179,7 @@ public sealed class AnthropicClient
         IReadOnlyList<object> messages,
         AnthropicToolSpec tool,
         bool forceTool,
+        string? model,
         CancellationToken ct)
     {
         object toolChoice = forceTool
@@ -182,7 +188,7 @@ public sealed class AnthropicClient
 
         var requestBody = new
         {
-            model = _model,
+            model = model ?? _model,
             max_tokens = 4096,
             system = systemPrompt,
             messages,

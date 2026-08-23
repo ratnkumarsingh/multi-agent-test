@@ -17,7 +17,7 @@
         <article>
             <StoryAvatar ImageUrl="@CurrentStory.ImageUrl" Seed="@CurrentStory.Headline" Size="StoryAvatarSize.Large" />
 
-            <h1 class="story-page__title">@CurrentStory.Headline</h1>
+            <h1 class="story-page__title">@DisplayHeadline</h1>
 
             <div class="story-page__meta">
                 <MetaItem Kind="IconKind.Calendar" Text="@PublishedLabel" />
@@ -25,11 +25,22 @@
                 <MetaItem Kind="IconKind.Star" Text="@($"{CurrentStory.Score}/10")" />
             </div>
 
-            <p class="story-page__body">@CurrentStory.Body</p>
+            <p class="story-page__body">@DisplayBody</p>
 
-            <a class="story-page__source-link" href="@CurrentStory.SourceUrl" target="_blank" rel="noopener noreferrer">
-                Read the original article &rarr;
-            </a>
+            <div class="story-page__actions">
+                <a class="story-page__source-link" href="@CurrentStory.SourceUrl" target="_blank" rel="noopener noreferrer">
+                    Read the original article &rarr;
+                </a>
+
+                <button type="button" class="story-page__translate-btn" disabled="@_isTranslating" @onclick="ToggleTranslationAsync">
+                    @(_isTranslating ? "Translating…" : _showingTranslation ? "Show Original" : "Translate to Hindi")
+                </button>
+            </div>
+
+            @if (_translationError is not null)
+            {
+                <p class="story-page__translate-error">@_translationError</p>
+            }
         </article>
     }
 </div>

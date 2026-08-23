@@ -71,7 +71,7 @@ public sealed class SearchAgent : IAgent<string, IReadOnlyList<NewsCandidate>>
             ? "No specific topic hint — cover a broad, varied mix."
             : $"Topic hint: {topicHint}";
 
-        var input = await _client.CallToolAsync(SystemPrompt, userMessage, Tool, forceTool: true, ct);
+        var input = await _client.CallToolAsync(SystemPrompt, userMessage, Tool, forceTool: true, ct: ct);
 
         var queries = new List<string>();
         foreach (var q in input.GetProperty("queries").EnumerateArray())

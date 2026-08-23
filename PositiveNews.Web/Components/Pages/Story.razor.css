@@ -48,6 +48,13 @@
     white-space: pre-wrap;
 }
 
+.story-page__actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+}
+
 .story-page__source-link {
     display: inline-flex;
     align-items: center;
@@ -60,4 +67,31 @@
 .story-page__source-link:hover {
     color: var(--color-accent-dark);
     text-decoration: underline;
+}
+
+.story-page__translate-btn {
+    border: 1px solid var(--color-accent);
+    background: transparent;
+    color: var(--color-accent);
+    font-weight: 600;
+    font-size: 0.9375rem;
+    padding: 0.5rem 1.1rem;
+    border-radius: 999px;
+    cursor: pointer;
+}
+
+.story-page__translate-btn:hover:not(:disabled) {
+    background: var(--color-accent);
+    color: white;
+}
+
+.story-page__translate-btn:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.story-page__translate-error {
+    margin-top: 1rem;
+    color: #b91c1c;
+    font-size: 0.9375rem;
 }

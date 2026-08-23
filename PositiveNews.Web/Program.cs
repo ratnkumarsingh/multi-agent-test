@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using PositiveNews.Agents;
+using PositiveNews.Agents.Agents;
 using PositiveNews.Core.Data;
 using PositiveNews.Web.Components;
 
@@ -14,6 +16,23 @@ builder.Services.AddRazorComponents()
 var dbPath = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "positivenews.db");
 builder.Services.AddDbContextFactory<PositiveNewsDbContext>(options =>
     options.UseSqlite($"Data Source={dbPath};Default Timeout=10"));
+
+// Wiring for TranslationAgent (the "Translate to Hindi" button on Story.razor) — the
+// same AnthropicOptions binding pattern PositiveNews.Cli uses, backed by the same
+// user-secrets store via the shared UserSecretsId above.
+var anthropicOptions = new AnthropicOptions();
+builder.Configuration.GetSection(AnthropicOptions.SectionName).Bind(anthropicOptions);
+anthropicOptions.ApiKey ??= builder.Configuration["ANTHROPIC_API_KEY"];
+builder.Services.AddSingleton(anthropicOptions);
+
+builder.Services.AddHttpClient<AnthropicClient>();
+
+// TranslationAgent runs on AnthropicOptions.TranslationModel (a cheaper model than the
+// rest of the pipeline) rather than the client's default model — see
+// AnthropicClient.CallToolAsync's optional `model` parameter.
+builder.Services.AddScoped(sp => new TranslationAgent(
+    sp.GetRequiredService<AnthropicClient>(),
+    sp.GetRequiredService<AnthropicOptions>().TranslationModel));
 
 var app = builder.Build();
 

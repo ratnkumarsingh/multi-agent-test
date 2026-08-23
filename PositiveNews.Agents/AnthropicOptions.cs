@@ -31,4 +31,12 @@ public sealed class AnthropicOptions
     /// instead (e.g. "anthropic/claude-sonnet-5") — override here if so.
     /// </summary>
     public string Model { get; set; } = "claude-sonnet-5";
+
+    /// <summary>
+    /// Cheaper/faster model for low-stakes calls where <see cref="Model"/> would be
+    /// overkill (currently just <c>TranslationAgent</c>). Same bare-id-vs-gateway-namespaced
+    /// override rules as <see cref="Model"/> apply — override via
+    /// <c>Anthropic:TranslationModel</c> if the configured gateway needs a namespaced id.
+    /// </summary>
+    public string TranslationModel { get; set; } = "claude-haiku-4-5-20251001";
 }

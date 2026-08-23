@@ -83,6 +83,19 @@ in the sibling `Aviral_Maths` project (`Aviral_Maths.AI/ClaudeOptions.cs`) — s
 Anthropic-compatible gateway instead of `api.anthropic.com` directly, if you want to. Leave
 them unset to talk to Anthropic directly (the default).
 
+`PositiveNews.Web` shares `PositiveNews.Cli`'s user-secrets store on purpose (same
+`<UserSecretsId>` in both `.csproj`s — it's just a shared file on disk keyed by that GUID)
+so the Anthropic key only needs setting once for the whole repo, not per-project.
+
+**Per-call model override**: `AnthropicClient.CallToolAsync` takes an optional `model`
+parameter, defaulting to `AnthropicOptions.Model` when omitted — for an agent that
+deliberately runs on a different model than the rest of the pipeline (currently just
+`TranslationAgent`, on the cheaper `AnthropicOptions.TranslationModel`). Both `Model` and
+`TranslationModel` follow the same bare-id-vs-gateway-namespaced-id rule — a gateway may
+reject the bare id (`"claude-haiku-4-5-20251001 is not a valid model ID"` was the actual
+error hit here), in which case override `Anthropic:TranslationModel` via user-secrets the
+same way `Anthropic:Model` was already namespaced for this project's gateway.
+
 ## Persistence
 
 One SQLite file at the repo root, `positivenews.db` (gitignored — local state, not shared),
@@ -110,6 +123,21 @@ by the real `Score` field, rather than inventing a category taxonomy or fake vie
 just to keep the Phase 3 layout intact. If a later phase wants any of those back, the
 right fix is a real upstream source for the field (an agent that assigns a category, an
 actual view-tracking mechanism) — not a plausible-looking placeholder in the view layer.
+
+## On-demand agent calls from PositiveNews.Web
+
+`PositiveNews.Web` referencing `PositiveNews.Agents` was originally slated for Phase 7 (a
+"run now" button calling `Orchestrator`) — the Hindi-translation button pulled that
+boundary-crossing forward, since it needs `TranslationAgent` directly. When a component
+needs an agent for a single user-triggered action (not a page-load-time need), inject
+`IServiceProvider` and resolve the agent lazily inside the click handler's `try`/`catch`,
+rather than `[Inject]`-ing the agent (or anything that transitively constructs
+`AnthropicClient`) as a component property. `AnthropicClient`'s constructor validates the
+API key eagerly and throws if it's missing — a direct property injection would run that
+check (and fail the whole page load) every time the page renders, not just when the
+action is actually used. See `Story.razor.cs`'s `ToggleTranslationAsync` for the pattern:
+lazy resolve, call, catch, show an inline error — never let an agent-call failure crash
+the page.
 
 ## Reliability posture
 

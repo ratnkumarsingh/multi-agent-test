@@ -53,7 +53,7 @@ public sealed class SummarizerAgent : IAgent<NewsCandidate, StorySummary>
             Snippet: {candidate.Snippet ?? "(none)"}
             """;
 
-        var input = await _client.CallToolAsync(SystemPrompt, userMessage, Tool, forceTool: true, ct);
+        var input = await _client.CallToolAsync(SystemPrompt, userMessage, Tool, forceTool: true, ct: ct);
 
         return new StorySummary(
             input.GetProperty("headline").GetString()!,
