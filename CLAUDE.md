@@ -135,6 +135,20 @@ translate-on-ingest normalization step.
   to baseline), with 2 of them genuinely from Hindi sources (bounded, not crowding out) —
   confirmed via the run's `PipelineStep` trace, not assumed from the fix's logic alone.
 
+**`NewsApiOrgClient` explicitly scopes to the current calendar month**: adds `from`/`to`
+(ISO `yyyy-MM-dd`, first-of-month through today) to the NewsAPI `/v2/everything` request
+rather than relying on the API's implicit default — Ratnesh asked for this as an
+alternative to running the pipeline across several real calendar days (which isn't
+something a single session can simulate, since `Orchestrator`'s `runDate` is always real
+`DateTime.UtcNow`, not overridable). Safely within NewsAPI's free-tier ~1-month lookback
+limit by construction. RSS-based sources are unaffected — they only ever return whatever's
+currently in the feed, with no date-range querying possible. **Live-verified but the
+effect wasn't visible in one particular test run**: `SearchAgent`'s `MaxCandidates` cap (20)
+was already the binding constraint that run, not the search API's date window, and
+`sortBy=publishedAt` still prioritizes the newest items within whatever window is
+queried — so don't assume this alone increases candidate count run-to-run; its value is in
+reliably covering the declared month rather than an ambiguous implicit default.
+
 ## Secrets
 
 `AnthropicClient` is configured from `AnthropicOptions` (bound from the `"Anthropic"`

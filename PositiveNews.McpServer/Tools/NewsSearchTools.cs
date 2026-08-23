@@ -12,7 +12,8 @@ internal sealed class NewsSearchTools
 {
     [McpServerTool(Name = "SearchNews")]
     [Description(
-        "Searches English-language news articles from roughly the last month matching a " +
+        "Searches news articles from the current calendar month (query-driven sources; " +
+        "RSS-based sources just return their latest published items regardless) matching a " +
         "free-text query. Returns up to `max` matching articles plus the true total match " +
         "count (TotalCount) even when the returned list is capped shorter. An empty article " +
         "list can mean either no matches or a failed call — check Error (a structured " +
