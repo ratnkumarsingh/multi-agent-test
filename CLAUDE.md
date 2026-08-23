@@ -65,6 +65,26 @@ wording. Prompt tricks reduce malformed output; they never eliminate it.
 - The MCP server is also registered in `.mcp.json` so it's directly pokeable from a
   Claude Code session during development, independent of the app's own agents.
 
+**Multiple news sources behind one `SearchNews` tool**: `INewsSearchClient`
+(`PositiveNews.McpServer/NewsSearch.cs`) has more than one implementation —
+`NewsApiOrgClient` (NewsAPI.org's query API) plus `RssNewsSearchClient` (one instance per
+public RSS/Atom feed: Phys.org, The Conversation, BBC News — AP News was considered but
+has no working free public RSS feed to point at). `AggregateNewsSearchClient` fans a
+search out across all of them concurrently, merges results deduped by URL (case-insensitive)
+sorted newest-first, and **caps the merged output to the same `max` each individual source
+was asked for** — adding sources diversifies the candidate pool, it does not multiply
+`SearchAgent`'s downstream `PositivityScorerAgent` call volume/cost, since the cap is
+structural on the aggregate output, not per-source. `NewsSearchTools.SearchNews` and
+everything above it (`SearchAgent`, `Orchestrator`) inject/see only `INewsSearchClient` and
+have no idea there's more than one provider behind it.
+
+An RSS/Atom feed isn't itself queryable like NewsAPI's endpoint — it's just "whatever the
+source most recently published" — so `RssNewsSearchClient.SearchAsync` approximates search
+by fetching the feed and keyword-matching the query against each item's title +
+summary/content client-side (a blank query just returns the most recent items). Atom feeds
+commonly carry the body in `<content>` rather than `<summary>` (hit this with The
+Conversation's feed) — check both, or matching silently degrades to title-only.
+
 ## Secrets
 
 `AnthropicClient` is configured from `AnthropicOptions` (bound from the `"Anthropic"`
