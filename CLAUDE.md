@@ -179,5 +179,10 @@ PositiveNews.Cli -- <args>` over the Blazor UI while developing agent logic.
   Re-run this after editing the hook's `Program.cs`. Registered in `.claude/settings.json`.
 - **`.claude/skills/blazor-skill/`** — Blazor component/coding conventions for
   `PositiveNews.Web` (code-behind split, `EventCallback`, `@key`, CSS isolation).
+- **`.claude/skills/hindi-translation/`** — dev-time reference for translation-quality
+  principles (natural over literal, register matching, the "would a native speaker
+  believe this was original" test). Note this skill alone changes nothing live — the
+  fix for actual translation quality is `TranslationAgent.cs`'s `SystemPrompt` itself,
+  per the "two agent notions" split above. Consult this skill when revising that prompt.
 - **`.claude/agents/multi-agent-reviewer.md`, `.claude/agents/schema-reviewer.md`** —
   subagents for reviewing C# diffs and JSON Schemas/MCP tool descriptions, respectively.
