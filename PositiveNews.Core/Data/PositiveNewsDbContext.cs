@@ -10,6 +10,7 @@ public sealed class PositiveNewsDbContext(DbContextOptions<PositiveNewsDbContext
     public DbSet<PipelineStep> PipelineSteps => Set<PipelineStep>();
     public DbSet<PipelineCandidate> PipelineCandidates => Set<PipelineCandidate>();
     public DbSet<NewsStory> NewsStories => Set<NewsStory>();
+    public DbSet<StoryTranslation> StoryTranslations => Set<StoryTranslation>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -47,6 +48,18 @@ public sealed class PositiveNewsDbContext(DbContextOptions<PositiveNewsDbContext
         // search pass, but a resumed run re-searching must not create duplicate rows.
         modelBuilder.Entity<PipelineCandidate>()
             .HasIndex(c => new { c.PipelineRunId, c.Url })
+            .IsUnique();
+
+        modelBuilder.Entity<NewsStory>()
+            .HasMany(s => s.Translations)
+            .WithOne(t => t.Story)
+            .HasForeignKey(t => t.NewsStoryId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // One cached translation per (story, locale) — a story is translated once, not
+        // on every "Translate" click.
+        modelBuilder.Entity<StoryTranslation>()
+            .HasIndex(t => new { t.NewsStoryId, t.Locale })
             .IsUnique();
     }
 }

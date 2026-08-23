@@ -5,10 +5,15 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
+    <!-- Same ID as PositiveNews.Cli — user-secrets are just a shared file on disk keyed
+         by this GUID, so the Anthropic key already set for the Cli is automatically
+         available here too. No separate user-secrets setup step needed for this project. -->
+    <UserSecretsId>positivenews-cli-dev-secrets</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\PositiveNews.Core\PositiveNews.Core.csproj" />
+    <ProjectReference Include="..\PositiveNews.Agents\PositiveNews.Agents.csproj" />
   </ItemGroup>
 
 </Project>

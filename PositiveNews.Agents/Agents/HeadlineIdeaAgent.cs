@@ -60,7 +60,7 @@ public sealed class HeadlineIdeaAgent : IAgent<string, IReadOnlyList<HeadlineIde
         // start, so a static prefix stays prompt-cache-friendly once caching is added.
         var userMessage = $"Topic: {topic}";
 
-        var input = await _client.CallToolAsync(SystemPrompt, userMessage, Tool, forceTool: true, ct);
+        var input = await _client.CallToolAsync(SystemPrompt, userMessage, Tool, forceTool: true, ct: ct);
 
         var result = new List<HeadlineIdea>();
         foreach (var idea in input.GetProperty("ideas").EnumerateArray())

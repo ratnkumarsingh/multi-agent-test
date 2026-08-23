@@ -100,7 +100,7 @@ static string BuildSource(string name, string inType, string outType, string ns,
     sb.AppendLine("        // Dynamic per-call content goes at the END of the user message (cache-friendly).");
     sb.AppendLine("        var userMessage = $\"TODO: {input}\";");
     sb.AppendLine();
-    sb.AppendLine("        var result = await _client.CallToolAsync(SystemPrompt, userMessage, Tool, forceTool: true, ct);");
+    sb.AppendLine("        var result = await _client.CallToolAsync(SystemPrompt, userMessage, Tool, forceTool: true, ct: ct);");
     sb.AppendLine();
     sb.AppendLine("        // TODO: map `result` (the tool's parsed input) into the output type.");
     sb.AppendLine("        throw new NotImplementedException();");

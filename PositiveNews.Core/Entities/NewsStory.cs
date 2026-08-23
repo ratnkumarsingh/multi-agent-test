@@ -16,4 +16,6 @@ public sealed class NewsStory
     public DateTimeOffset? PublishedAt { get; set; }
     public int Score { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
+
+    public List<StoryTranslation> Translations { get; set; } = [];
 }

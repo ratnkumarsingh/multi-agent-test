@@ -55,7 +55,7 @@ public sealed class PositivityScorerAgent : IAgent<NewsCandidate, PositivityScor
             Snippet: {candidate.Snippet ?? "(none)"}
             """;
 
-        var input = await _client.CallToolAsync(SystemPrompt, userMessage, Tool, forceTool: true, ct);
+        var input = await _client.CallToolAsync(SystemPrompt, userMessage, Tool, forceTool: true, ct: ct);
 
         return new PositivityScore(
             input.GetProperty("score").GetInt32(),

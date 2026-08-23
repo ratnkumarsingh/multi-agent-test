@@ -10,16 +10,18 @@ servers) fit together in general. See `CLAUDE.md` for this project's own convent
 
 - `PositiveNews.Cli` — fast console harness for iterating on agents without the web UI.
 - `PositiveNews.Agents` — Anthropic client, `IAgent<TIn,TOut>` agents (`HeadlineIdeaAgent`,
-  `SearchAgent`, `PositivityScorerAgent`, `SummarizerAgent`), `Orchestrator` (fan-out
-  scoring/summarizing with per-candidate failure isolation), MCP client wiring
-  (`Mcp/NewsSearchMcpClient.cs`).
+  `SearchAgent`, `PositivityScorerAgent`, `SummarizerAgent`, `TranslationAgent`),
+  `Orchestrator` (fan-out scoring/summarizing with per-candidate failure isolation), MCP
+  client wiring (`Mcp/NewsSearchMcpClient.cs`).
 - `PositiveNews.McpServer` — custom MCP server exposing a `SearchNews` tool over stdio,
   backed by NewsAPI.org (`INewsSearchClient`, one-file provider swap).
 - `PositiveNews.Web` — Blazor Web App (Interactive Server), reading real curated stories
   from `PositiveNews.Core` (`Home.razor` — story list + "Top Rated" sidebar by score;
-  `Story.razor` — detail page). Read-only — no run-triggering yet (Phase 7).
+  `Story.razor` — detail page, with an on-demand "Translate to Hindi" button). Still
+  read-only otherwise — no scheduled/"run now" pipeline-triggering yet (Phase 7).
 - `PositiveNews.Core` — `PositiveNewsDbContext` + entities (`PipelineRun`, `PipelineStep`,
-  `PipelineCandidate`, `NewsStory`) over SQLite, one file at the repo root.
+  `PipelineCandidate`, `NewsStory`, `StoryTranslation`) over SQLite, one file at the repo
+  root.
 - `.claude/agents/multi-agent-reviewer.md`, `.claude/agents/schema-reviewer.md` — starter
   subagents for reviewing C# changes and JSON Schemas/MCP tool descriptions.
 - `.claude/skills/blazor-skill/` — Blazor component/coding conventions for
@@ -34,16 +36,16 @@ servers) fit together in general. See `CLAUDE.md` for this project's own convent
 
 ## Status
 
-Phase 6 complete: the Blazor shell now reads real data. `Home.razor` queries the latest
-completed `PipelineRun`'s `NewsStory` rows instead of Phase 3's hardcoded placeholders;
-`Story.razor` is a new detail page. The sidebar's Categories and Tag Cloud sections were
-dropped (no category/tag data exists anywhere in the pipeline — nothing was faked to fill
-them); "Popular Articles" was repurposed as "Top Rated", backed by the real `Score` field
-instead of a fabricated view count. `StoryAvatar` now shows a story's real image when
-NewsAPI provided one, falling back to a deterministic gradient (keyed off the headline)
-when it didn't — verified live with a mix of both in the same run. Next: Phase 7 (daily
-scheduling + live run progress — the "run now" button and background scheduler this
-phase deliberately left out). See the phase-wise plan
+Phase 6 complete, plus an on-demand Hindi-translation feature (a scoped-down slice of
+Phase 8) built ahead of Phase 7. `Story.razor` has a "Translate to Hindi" button:
+`TranslationAgent` (forced-tool, same `{Headline, Body}` shape as `SummarizerAgent`) runs
+on a cheaper model (`AnthropicOptions.TranslationModel`, via a new optional `model`
+parameter on `AnthropicClient.CallToolAsync`) and caches the result in `StoryTranslation`
+so a story is translated once, not on every view — verified live, including the cache
+(reloading and clicking translate again is instant, no second API call). This is what
+pulled `PositiveNews.Web`'s reference to `PositiveNews.Agents` forward from Phase 7.
+Next: Phase 7 (daily scheduling + live run progress — the "run now" button and
+background scheduler). See the phase-wise plan
 (`C:\Users\Ratnesh\.claude\plans\can-you-create-a-structured-rabin.md`) for the
 full roadmap.
 
@@ -52,6 +54,10 @@ full roadmap.
 ```
 dotnet user-secrets set "Anthropic:ApiKey" <key> --project PositiveNews.Cli
 dotnet user-secrets set "NewsApi:ApiKey" <key> --project PositiveNews.McpServer
+# PositiveNews.Web shares the Cli's user-secrets store (same UserSecretsId) — no separate
+# key-setting step needed for it. If your gateway needs a namespaced Haiku model id for
+# translation (it likely does, the same way Anthropic:Model needed one):
+dotnet user-secrets set "Anthropic:TranslationModel" "anthropic/claude-haiku-4-5" --project PositiveNews.Cli
 
 # Headline ideas (forced tool_choice, no external I/O)
 dotnet run --project PositiveNews.Cli -- headline "topic to brainstorm about"
