@@ -109,9 +109,11 @@ translate-on-ingest normalization step.
   substring-matching those against Devanagari text would essentially never hit.
   `PositivityScorerAgent` needed no changes to handle Hindi input correctly (verified live,
   not assumed) — positivity judgment isn't language-dependent.
-- `Story.razor`'s "Translate to Hindi" button is hidden when `CurrentStory.Locale == "hi"`
-  (translating an already-Hindi story to Hindi is meaningless) — the one UI change this
-  needed; search/filtering/date formatting all degrade gracefully on Hindi text unchanged.
+- `Story.razor`'s translate control excludes whichever locale the story is already
+  natively written in from its language switcher (translating a story into its own
+  language is meaningless) — see "Multi-language translation switcher" below for the full
+  switcher this grew into; search/filtering/date formatting all degrade gracefully on
+  Hindi (or any other language's) text unchanged.
 - **A handful of these outlets (TV9, Jansatta) return 403 to a plain custom User-Agent but
   serve normally to a realistic browser UA** — `RssNewsSearchClient`'s default UA string
   was changed accordingly for all RSS sources, not just the Hindi ones.
@@ -292,6 +294,36 @@ browser may already be gone by the time disposal runs.
 Search (`FilteredStories`) only filters over whatever's been paginated in so far, not the
 full history — a known, accepted tradeoff rather than building incremental "search while
 still loading more" plumbing for a dataset this size right now.
+
+## Multi-language translation switcher (Phase 8 completion)
+
+`Story.razor`'s original single "Translate to Hindi" button generalized into a `<select>`
+of 23 languages (broad national + international coverage, excluding Arabic/Urdu/Bengali
+per Ratnesh's request) + a translate/show-original toggle button — `Story.razor.cs`'s
+`SupportedLocales` array. The dropdown excludes whichever locale the story is already
+natively written in (`AvailableLocales`), so a native-Hindi story offers translation into
+English/Spanish/etc. but not Hindi-to-Hindi, and an English-native story defaults to
+offering Hindi first.
+
+**Deliberately still on-demand/cached, not the plan's original batch fan-out design**: the
+plan sketched auto-translating every curated story into a fixed locale list as part of
+every `Orchestrator` run. That was considered and explicitly not built — it would multiply
+real Anthropic API cost on every pipeline run regardless of whether anyone ever views a
+translation. On-demand only ever costs a call when a viewer actually picks a language, and
+`StoryTranslation`'s `(NewsStoryId, Locale)` unique-index cache means each (story, language)
+pair is only ever translated once, same as the original Hindi-only design already proved
+out. Neither `TranslationAgent` nor `StoryTranslation` needed any schema changes to
+generalize past Hindi — both were already locale-generic (`TranslationRequest` takes a
+free-text `TargetLanguageName`, not an enum); only `Story.razor`/`Story.razor.cs` needed
+work, going from one hardcoded locale to a `Dictionary<string, StoryTranslation>` keyed by
+whichever locales have actually been translated for that story so far.
+
+**Live-verified for two different real languages, not just English**: translating a
+native-Hindi story into Chinese produced coherent Chinese output; toggling back to
+original and re-selecting Chinese re-displayed it instantly (cache hit, no re-translation
+delay); default-locale selection confirmed correct on both an English-native story
+(defaults to Hindi) and a Hindi-native story (defaults to English, Hindi absent from its
+own dropdown).
 
 ## On-demand agent calls from PositiveNews.Web
 

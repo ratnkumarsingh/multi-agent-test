@@ -32,10 +32,17 @@
                     Read the original article &rarr;
                 </a>
 
-                @if (CurrentStory.Locale != TargetLocale)
+                @if (AvailableLocales.Length > 0)
                 {
+                    <select class="story-page__language-select" value="@_selectedLocale" @onchange="OnLocaleChanged" disabled="@_isTranslating">
+                        @foreach (var (locale, name) in AvailableLocales)
+                        {
+                            <option value="@locale">@name</option>
+                        }
+                    </select>
+
                     <button type="button" class="story-page__translate-btn" disabled="@_isTranslating" @onclick="ToggleTranslationAsync">
-                        @(_isTranslating ? "Translating…" : _showingTranslation ? "Show Original" : "Translate to Hindi")
+                        @(_isTranslating ? "Translating…" : _showingTranslation ? "Show Original" : $"Translate to {SelectedLanguageName}")
                     </button>
                 }
             </div>

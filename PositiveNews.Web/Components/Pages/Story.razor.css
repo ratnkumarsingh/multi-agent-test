@@ -69,6 +69,21 @@
     text-decoration: underline;
 }
 
+.story-page__language-select {
+    border: 1px solid var(--color-border);
+    background: white;
+    color: var(--color-text);
+    font-size: 0.9375rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 999px;
+    cursor: pointer;
+}
+
+.story-page__language-select:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
 .story-page__translate-btn {
     border: 1px solid var(--color-accent);
     background: transparent;
