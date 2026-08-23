@@ -74,9 +74,12 @@ search out across all of them concurrently, merges results deduped by URL (case-
 sorted newest-first, and **caps the merged output to the same `max` each individual source
 was asked for** — adding sources diversifies the candidate pool, it does not multiply
 `SearchAgent`'s downstream `PositivityScorerAgent` call volume/cost, since the cap is
-structural on the aggregate output, not per-source. `NewsSearchTools.SearchNews` and
-everything above it (`SearchAgent`, `Orchestrator`) inject/see only `INewsSearchClient` and
-have no idea there's more than one provider behind it.
+structural on the aggregate output, not per-source. Within that cap, sources flagged
+`IsQueryInvariant` (see below) get at most a quarter of `max` reserved for them combined,
+guaranteeing query-driven sources most of the budget regardless of how many query-invariant
+sources are configured. `NewsSearchTools.SearchNews` and everything above it (`SearchAgent`,
+`Orchestrator`) inject/see only `INewsSearchClient` and have no idea there's more than one
+provider behind it.
 
 An RSS/Atom feed isn't itself queryable like NewsAPI's endpoint — it's just "whatever the
 source most recently published" — so `RssNewsSearchClient.SearchAsync` approximates search
@@ -118,15 +121,19 @@ translate-on-ingest normalization step.
   turned up dead subdomains or 404s, and Dainik Bhaskar's `bhaskarhindi.com` mirror plus
   The Better India's Hindi site both 403'd regardless of User-Agent — all left out rather
   than wired to something broken or guessed.
-- **Known live-tested side effect, not yet addressed**: because the Hindi sources return
-  the same "most recent" items regardless of which of `SearchAgent`'s 3-5 differently-worded
-  planned queries is asked, they tend to win `AggregateNewsSearchClient`'s newest-first
-  merge on every query call, crowding the shared per-query result cap with near-duplicates
-  that then get deduped away — net effect, a live test run found fewer total distinct
-  candidates (9) than a comparable pre-Hindi-sources run (20). Not broken (the run still
-  completed, produced a genuine high-quality Hindi story), but the source-diversity budget
-  design in `AggregateNewsSearchClient`/`SearchAgent`'s per-query loop could use revisiting
-  if candidate volume matters more than it currently does.
+- **Candidate-diversity side effect — found live, then fixed**: because the Hindi sources
+  return the same "most recent" items regardless of which of `SearchAgent`'s 3-5
+  differently-worded planned queries is asked, they were winning
+  `AggregateNewsSearchClient`'s newest-first merge on every query call, crowding the shared
+  per-query result cap with near-duplicates that then got deduped away — a live test run
+  found total distinct candidates drop from 20 (pre-Hindi-sources baseline) to 9. Fixed via
+  `INewsSearchClient.IsQueryInvariant` (a default-`false` interface member;
+  `RssNewsSearchClient` returns `!matchQuery`): `AggregateNewsSearchClient` now reserves at
+  most a quarter of `max` for query-invariant sources combined, with the rest reliably
+  going to query-driven sources regardless of how many query-invariant sources are
+  configured. **Verified live**: a reset+rerun after the fix found 20 candidates again (back
+  to baseline), with 2 of them genuinely from Hindi sources (bounded, not crowding out) —
+  confirmed via the run's `PipelineStep` trace, not assumed from the fix's logic alone.
 
 ## Secrets
 
