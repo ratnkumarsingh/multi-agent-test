@@ -41,7 +41,17 @@ public sealed class NewsApiOrgClient : INewsSearchClient
         }
 
         var pageSize = Math.Clamp(max, 1, MaxAllowed);
-        var url = $"v2/everything?q={Uri.EscapeDataString(query)}&pageSize={pageSize}&sortBy=publishedAt&language=en";
+
+        // Explicitly scope to the current calendar month (rather than relying on
+        // sortBy=publishedAt to just happen to surface only the newest handful) so a
+        // single run considers the whole month's candidates, not just today's. Safely
+        // within NewsAPI's free-tier ~1-month lookback limit by construction, since "this
+        // month" is at most ~31 days back.
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var monthStart = new DateOnly(today.Year, today.Month, 1);
+        var url =
+            $"v2/everything?q={Uri.EscapeDataString(query)}&pageSize={pageSize}&sortBy=publishedAt&language=en" +
+            $"&from={monthStart:yyyy-MM-dd}&to={today:yyyy-MM-dd}";
 
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
         request.Headers.Add("X-Api-Key", _options.ApiKey);
