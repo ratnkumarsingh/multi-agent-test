@@ -21,8 +21,8 @@ public sealed record NewsCandidate(
 /// </summary>
 public sealed class SearchAgent : IAgent<string, IReadOnlyList<NewsCandidate>>
 {
-    private const int MaxCandidates = 20;
-    private const int MaxResultsPerQuery = 8;
+    private const int MaxCandidates = 40;
+    private const int MaxResultsPerQuery = 15;
 
     private const string SystemPrompt = """
         You plan search queries for a daily positive-news pipeline: given an optional topic

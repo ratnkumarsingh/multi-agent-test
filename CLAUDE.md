@@ -189,6 +189,21 @@ prompt describes, live-verified via a real pipeline run producing valid results 
 prompt text itself is describing a different, more end-to-end agent than this one actually
 is.
 
+**"Why only N news" almost always traces to `Orchestrator.MinScore`/`topN`, not source
+supply**: every "why only 1/2/3 news" question this session traced back to
+`SearchAgent.MaxCandidates` (20) already being hit — the search phase reliably finds a full
+candidate pool every run, it's `Orchestrator`'s `MinScore = 6` positivity filter that
+discards most of it. Ratnesh initially considered building an HTML-scraping search agent to
+get "more news," but that would've fed more raw candidates into the same strict filter
+without changing how many survive it — the actual fix was raising `SearchAgent`'s
+`MaxCandidates` (20 → 40) and `MaxResultsPerQuery` (8 → 15), i.e. widening the pool the
+existing filter chooses from, not lowering the quality bar (`MinScore` untouched).
+**Live-verified**: a reset+rerun found 40 candidates (double) and 5 stories survived (now
+hitting `topN=5`, not starved for qualifying content) — including two new 8/10 stories that
+hadn't shown up in any prior run today. If "why only N" comes up again, check these two
+constants and the actual candidate/survivor counts in the run's output before assuming the
+search/source layer needs more work.
+
 ## Secrets
 
 `AnthropicClient` is configured from `AnthropicOptions` (bound from the `"Anthropic"`
