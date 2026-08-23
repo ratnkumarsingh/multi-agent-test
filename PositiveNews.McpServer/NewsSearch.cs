@@ -54,4 +54,15 @@ public sealed record NewsSearchResponse(
 public interface INewsSearchClient
 {
     Task<NewsSearchResponse> SearchAsync(string query, int max, CancellationToken ct);
+
+    /// <summary>
+    /// True when this source ignores <c>query</c> entirely and always returns the same
+    /// "most recent items" regardless of what's asked (e.g. an RSS client configured with
+    /// <c>matchQuery: false</c>). <see cref="AggregateNewsSearchClient"/> uses this to cap
+    /// how much of a single merged response such a source can claim — otherwise, across
+    /// SearchAgent's several differently-worded queries in one run, a query-invariant
+    /// source returns identical results every time and crowds out genuinely new candidates
+    /// from query-driven sources once later calls get deduped away.
+    /// </summary>
+    bool IsQueryInvariant => false;
 }

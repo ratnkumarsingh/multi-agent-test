@@ -12,6 +12,15 @@ namespace PositiveNews.McpServer;
 /// One source failing doesn't sink the whole search (same fan-out-isolate-failures posture
 /// as Orchestrator's per-candidate scoring/summarizing) — only if *every* source fails does
 /// this return a Failure envelope.
+///
+/// <see cref="INewsSearchClient.IsQueryInvariant"/> sources get at most a quarter of
+/// <c>max</c> reserved for them, the rest goes to query-driven sources. Without this, a
+/// live test run (once Hindi sources with <c>matchQuery: false</c> were added) found total
+/// distinct candidates per pipeline run drop from 20 to 9: SearchAgent asks several
+/// differently-worded queries per run, a query-invariant source returns the exact same
+/// "most recent" items to every one of them, and since those are typically the freshest
+/// timestamps in the merge they crowded out query-driven sources' results — which vary per
+/// query and would otherwise have contributed new, non-duplicate candidates each time.
 /// </summary>
 public sealed class AggregateNewsSearchClient : INewsSearchClient
 {
@@ -28,7 +37,15 @@ public sealed class AggregateNewsSearchClient : INewsSearchClient
     {
         var results = await Task.WhenAll(_sources.Select(s => SearchOneAsync(s, query, max, ct)));
 
-        var succeeded = results.Where(r => r.Error is null).ToList();
+        var succeeded = new List<(INewsSearchClient Source, NewsSearchResponse Response)>();
+        for (var i = 0; i < _sources.Count; i++)
+        {
+            if (results[i].Error is null)
+            {
+                succeeded.Add((_sources[i], results[i]));
+            }
+        }
+
         if (succeeded.Count == 0)
         {
             var messages = string.Join(" | ", results.Select(r => r.Error!.Message));
@@ -37,18 +54,27 @@ public sealed class AggregateNewsSearchClient : INewsSearchClient
                 $"All {_sources.Count} news source(s) failed: {messages}");
         }
 
-        var merged = succeeded
-            .SelectMany(r => r.Articles)
-            .GroupBy(a => a.Url, StringComparer.OrdinalIgnoreCase)
-            .Select(g => g.First())
-            .OrderByDescending(a => a.PublishedAt)
-            .Take(max)
-            .ToList();
+        var invariantArticles = DedupedNewestFirst(succeeded.Where(s => s.Source.IsQueryInvariant).SelectMany(s => s.Response.Articles));
+        var drivenArticles = DedupedNewestFirst(succeeded.Where(s => !s.Source.IsQueryInvariant).SelectMany(s => s.Response.Articles));
 
-        var totalCount = succeeded.Sum(r => r.TotalCount);
+        var invariantQuota = Math.Max(1, max / 4);
+        var takenInvariant = invariantArticles.Take(invariantQuota).ToList();
+        // Query-driven sources get whatever's left of the budget — including the
+        // invariant quota's unused remainder, if that group came up short.
+        var takenDriven = drivenArticles.Take(max - takenInvariant.Count).ToList();
+
+        var merged = DedupedNewestFirst(takenInvariant.Concat(takenDriven)).Take(max).ToList();
+        var totalCount = succeeded.Sum(s => s.Response.TotalCount);
 
         return new NewsSearchResponse(merged, totalCount, Error: null);
     }
+
+    private static List<NewsArticle> DedupedNewestFirst(IEnumerable<NewsArticle> articles) =>
+        articles
+            .GroupBy(a => a.Url, StringComparer.OrdinalIgnoreCase)
+            .Select(g => g.First())
+            .OrderByDescending(a => a.PublishedAt)
+            .ToList();
 
     private async Task<NewsSearchResponse> SearchOneAsync(INewsSearchClient source, string query, int max, CancellationToken ct)
     {

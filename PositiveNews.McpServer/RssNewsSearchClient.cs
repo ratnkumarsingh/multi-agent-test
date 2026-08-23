@@ -45,6 +45,8 @@ public sealed class RssNewsSearchClient : INewsSearchClient
         _matchQuery = matchQuery;
     }
 
+    public bool IsQueryInvariant => !_matchQuery;
+
     public async Task<NewsSearchResponse> SearchAsync(string query, int max, CancellationToken ct)
     {
         var take = Math.Clamp(max, 1, MaxAllowed);
