@@ -11,15 +11,32 @@
                 to populate some.
             </p>
         }
-        else if (FilteredStories.Count == 0)
-        {
-            <p class="home-layout__empty">No stories match "@SearchQuery".</p>
-        }
         else
         {
-            @foreach (var story in FilteredStories)
+            @if (FilteredStories.Count == 0)
             {
-                <ArticleCard @key="story.Id" Story="story" />
+                <p class="home-layout__empty">No stories match "@SearchQuery".</p>
+            }
+            else
+            {
+                @foreach (var story in FilteredStories)
+                {
+                    <ArticleCard @key="story.Id" Story="story" />
+                }
+            }
+
+            @if (_hasMore)
+            {
+                <div @ref="_sentinel" class="home-layout__sentinel">
+                    @if (_isLoadingMore)
+                    {
+                        <span>Loading more stories…</span>
+                    }
+                </div>
+            }
+            else
+            {
+                <p class="home-layout__end">You've reached the end — that's all the curated stories so far.</p>
             }
         }
     </main>

@@ -129,6 +129,31 @@ just to keep the Phase 3 layout intact. If a later phase wants any of those back
 right fix is a real upstream source for the field (an agent that assigns a category, an
 actual view-tracking mechanism) — not a plausible-looking placeholder in the view layer.
 
+## Infinite scroll on Home — first JS interop in the project
+
+`Home.razor` pages through every `Completed` `PipelineRun`'s `NewsStory` rows (newest run
+first via `PipelineRunId` descending — not `RunDate`/any `DateTimeOffset` column, per the
+SQLite ordering gotcha below — then `Score` descending within a run), loading
+`PageSize` (10) at a time. "Top Rated" in the sidebar is a separate, independent query
+scoped to just the latest run, not derived from the paginated list — otherwise it would
+drift toward old high-scoring stories as more history loads, instead of reflecting
+"today's best."
+
+Loading the next page is triggered by an `IntersectionObserver` (`wwwroot/js/infiniteScroll.js`)
+watching a sentinel `<div>` rendered after the story list — the first JS interop in this
+repo. Pattern: `Home.razor.cs` imports the module once in `OnAfterRenderAsync(firstRender)`,
+passes a `DotNetObjectReference<Home>` + the sentinel `ElementReference` into `observe(...)`,
+and the JS callback invokes a `[JSInvokable]` `LoadMoreAsync()` back on the component —
+which is safe to call `StateHasChanged()` from directly (JS-invoked .NET methods already
+run on the circuit's synchronization context in Blazor Server, no extra dispatch needed).
+`Home` implements `IAsyncDisposable` to disconnect the observer and dispose the JS module
+reference/`DotNetObjectReference`, wrapped in a `catch (JSDisconnectedException)` since the
+browser may already be gone by the time disposal runs.
+
+Search (`FilteredStories`) only filters over whatever's been paginated in so far, not the
+full history — a known, accepted tradeoff rather than building incremental "search while
+still loading more" plumbing for a dataset this size right now.
+
 ## On-demand agent calls from PositiveNews.Web
 
 `PositiveNews.Web` referencing `PositiveNews.Agents` was originally slated for Phase 7 (a

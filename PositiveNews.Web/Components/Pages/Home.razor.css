@@ -20,6 +20,21 @@
     font-size: 0.875em;
 }
 
+.home-layout__sentinel {
+    display: flex;
+    justify-content: center;
+    padding: 1.5rem 0;
+    color: var(--color-text-muted);
+    font-size: 0.9375rem;
+}
+
+.home-layout__end {
+    text-align: center;
+    padding: 1.5rem 0;
+    color: var(--color-text-muted);
+    font-size: 0.9375rem;
+}
+
 @media (max-width: 860px) {
     .home-layout {
         grid-template-columns: 1fr;
