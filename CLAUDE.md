@@ -149,6 +149,46 @@ was already the binding constraint that run, not the search API's date window, a
 queried — so don't assume this alone increases candidate count run-to-run; its value is in
 reliably covering the declared month rather than an ambiguous implicit default.
 
+**Religion/faith/spirituality is an eligible positive-news angle**: `SearchAgent`'s
+query-planning prompt lists it alongside its other example angles (community,
+science/health, environment, everyday kindness) — Claude picks 3-5 queries per run, so this
+isn't guaranteed to be covered on any single run, same as the other example angles aren't.
+`PositivityScorerAgent` was updated too, not just `SearchAgent` — finding such a candidate
+would be pointless if the scorer didn't recognize it as legitimate positive content. The
+scorer's instruction is explicit that this only applies to genuinely uplifting
+religion/faith stories judged by the same bar as anything else (interfaith harmony, a
+faith-driven act of service, a spiritual practice that helped someone) — coverage of
+religious conflict or controversy stays low-scoring regardless of topic, exactly like any
+other negative story. **Not fully live-verified end-to-end**: a reset+rerun after this
+change didn't happen to plan a religion-themed query, and a direct `mcp-direct` probe with
+religion/spirituality keywords didn't turn up genuinely on-topic content in today's actual
+news cycle either — expected, since this depends on both the query-planning being
+probabilistic and on what's actually being published that day, not something worth forcing
+via repeated paid pipeline runs just to prove out.
+
+**`SearchAgent`'s system prompt was substantially expanded, mid-session, outside my edits**
+(the "Global Positive News Research Agent" brief — global-coverage mandates, an explicit
+positive/constructive-news taxonomy, source-quality standards, a verification checklist,
+example search-term combinations). This looked like a deliberate manual edit while I was
+working, similar to earlier out-of-band additions to `TranslationAgent`'s prompt — kept as
+current state rather than reverted, per this repo's working convention. Two real fixes
+applied on top: (1) a formatting glitch where my own religion/faith/spirituality sentence
+ran directly into the new content with no paragraph break; (2) more substantively, the new
+prompt's own category list and example search terms didn't actually mention
+religion/faith/spirituality anywhere despite that being the whole point of the request that
+prompted it — added a bullet to both, phrased consistently with `PositivityScorerAgent`'s
+wording (interfaith harmony/faith-driven service count, religious conflict/controversy
+doesn't). **One thing flagged but left alone, worth knowing about**: this expanded
+prompt's "OUTPUT" section describes an 8-field per-story format (headline, country/region,
+category, publication date, summary, why-positive, source, primary source) that doesn't
+match what this agent actually returns — `SearchAgent`'s forced-tool schema only ever asks
+for `queries: string[]` (3-5 search query strings; picking the actual stories is
+`PositivityScorerAgent`/`SummarizerAgent`'s job downstream). Harmless in practice —
+`forceTool: true` structurally guarantees the real output shape regardless of what the
+prompt describes, live-verified via a real pipeline run producing valid results — but the
+prompt text itself is describing a different, more end-to-end agent than this one actually
+is.
+
 ## Secrets
 
 `AnthropicClient` is configured from `AnthropicOptions` (bound from the `"Anthropic"`
