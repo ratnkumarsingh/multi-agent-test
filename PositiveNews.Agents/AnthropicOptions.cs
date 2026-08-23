@@ -33,10 +33,13 @@ public sealed class AnthropicOptions
     public string Model { get; set; } = "claude-sonnet-5";
 
     /// <summary>
-    /// Cheaper/faster model for low-stakes calls where <see cref="Model"/> would be
-    /// overkill (currently just <c>TranslationAgent</c>). Same bare-id-vs-gateway-namespaced
-    /// override rules as <see cref="Model"/> apply — override via
-    /// <c>Anthropic:TranslationModel</c> if the configured gateway needs a namespaced id.
+    /// Model used by <c>TranslationAgent</c>, kept as its own override (rather than
+    /// reusing <see cref="Model"/> directly) so it can be tuned independently of the
+    /// main pipeline's model — currently set to the same Sonnet tier as <see cref="Model"/>,
+    /// after Haiku's translations proved not reliably natural enough even with a tuned
+    /// prompt. Same bare-id-vs-gateway-namespaced override rules as <see cref="Model"/>
+    /// apply — override via <c>Anthropic:TranslationModel</c> if the configured gateway
+    /// needs a namespaced id.
     /// </summary>
-    public string TranslationModel { get; set; } = "claude-haiku-4-5-20251001";
+    public string TranslationModel { get; set; } = "claude-sonnet-5";
 }
