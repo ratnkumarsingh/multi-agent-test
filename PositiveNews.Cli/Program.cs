@@ -23,6 +23,7 @@ return mode switch
     "mcp-direct" => await RunMcpDirectAsync(rest),
     "mcp-auto" => await RunMcpAutoAsync(config, rest),
     "run-pipeline" => await RunPipelineAsync(config, rest),
+    "reset-run" => await RunResetRunAsync(rest),
     "score-test" => await RunScoreTestAsync(config),
     "history" => await RunHistoryAsync(rest),
     "headline" => await RunHeadlineAsync(config, rest),
@@ -243,6 +244,49 @@ static async Task<int> RunPipelineAsync(IConfiguration config, string[] topicArg
         Console.WriteLine();
     }
 
+    return 0;
+}
+
+/// <summary>
+/// Dev-only escape hatch around Orchestrator's one-run-per-calendar-day idempotency:
+/// deletes a run's PipelineCandidate/NewsStory/PipelineStep rows (and any StoryTranslations
+/// hanging off those stories) and resets its Status to InProgress, so the next
+/// `run-pipeline` genuinely re-searches/re-scores/re-summarizes instead of returning the
+/// same cached result. Defaults to today; pass a date (e.g. "2026-08-23") to reset a
+/// different day. The PipelineRun row itself is kept (not deleted) so it still occupies its
+/// RunDate slot and gets resumed rather than duplicated.
+/// </summary>
+static async Task<int> RunResetRunAsync(string[] args)
+{
+    var runDate = args.Length > 0 && DateOnly.TryParse(args[0], out var parsed)
+        ? parsed
+        : DateOnly.FromDateTime(DateTime.UtcNow);
+
+    var dbFactory = CreateDbContextFactory();
+    await EnsureDatabaseReadyAsync(dbFactory, CancellationToken.None);
+    await using var db = await dbFactory.CreateDbContextAsync();
+
+    var run = await db.PipelineRuns.FirstOrDefaultAsync(r => r.RunDate == runDate);
+    if (run is null)
+    {
+        Console.WriteLine($"No PipelineRun found for {runDate}.");
+        return 1;
+    }
+
+    var storyIds = await db.NewsStories.Where(s => s.PipelineRunId == run.Id).Select(s => s.Id).ToListAsync();
+    var translationCount = await db.StoryTranslations.Where(t => storyIds.Contains(t.NewsStoryId)).ExecuteDeleteAsync();
+    var storyCount = await db.NewsStories.Where(s => s.PipelineRunId == run.Id).ExecuteDeleteAsync();
+    var candidateCount = await db.PipelineCandidates.Where(c => c.PipelineRunId == run.Id).ExecuteDeleteAsync();
+    var stepCount = await db.PipelineSteps.Where(s => s.PipelineRunId == run.Id).ExecuteDeleteAsync();
+
+    run.Status = PipelineRunStatus.InProgress;
+    run.CompletedAt = null;
+    await db.SaveChangesAsync();
+
+    Console.WriteLine(
+        $"Reset PipelineRun #{run.Id} for {runDate}: deleted {candidateCount} candidate(s), " +
+        $"{storyCount} stor{(storyCount == 1 ? "y" : "ies")}, {translationCount} translation(s), " +
+        $"{stepCount} step(s). Status set back to InProgress — run `run-pipeline` again to reprocess.");
     return 0;
 }
 

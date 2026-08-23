@@ -203,6 +203,20 @@ a no-op on rerun) and resumable at the individual-candidate level (a rerun skips
 candidates already searched/scored/summarized, not just skips the whole run), with every
 agent invocation traced in `PipelineStep` for inspection via `PositiveNews.Cli history`.
 
+**Forcing a genuine rerun of an already-`Completed` day**: `dotnet run --project
+PositiveNews.Cli -- reset-run [yyyy-MM-dd]` (defaults to today) deletes that run's
+`PipelineCandidate`/`NewsStory`/`PipelineStep` rows (and any `StoryTranslation`s hanging
+off those stories) and resets `Status` back to `InProgress` — the `PipelineRun` row itself
+is kept, not deleted, so it still occupies its `RunDate` slot and the next `run-pipeline`
+resumes it rather than creating a duplicate. Deletes child rows explicitly in dependency
+order (translations → stories → candidates → steps) rather than relying on EF Core's
+configured cascade deletes, since `ExecuteDeleteAsync`'s bulk-SQL delete bypasses the
+change tracker that normally drives cascade behavior — whether that would've cascaded
+correctly at the raw SQLite level depends on the `foreign_keys` pragma actually being on
+for that connection, which wasn't worth trusting for a destructive operation like this.
+This is a dev-only escape hatch around the idempotency guarantee above, not a production
+feature — real production idempotency doesn't need a bypass button.
+
 **A real SQLite/EF Core gotcha hit here**: the SQLite provider can't translate
 `ORDER BY` on a `DateTimeOffset` column into SQL (`NotSupportedException` at query time,
 not at compile time) — order by an int/auto-increment `Id` or a `DateOnly` column instead
