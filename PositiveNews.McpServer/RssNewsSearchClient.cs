@@ -6,11 +6,12 @@ namespace PositiveNews.McpServer;
 
 /// <summary>
 /// <see cref="INewsSearchClient"/> backed by a single public RSS/Atom feed (e.g. Phys.org,
-/// The Conversation, BBC News). Unlike <see cref="NewsApiOrgClient"/>'s "everything" search
-/// endpoint, an RSS feed isn't itself queryable — it's just "whatever the source most
-/// recently published." <see cref="SearchAsync"/> approximates a search by fetching the
-/// feed and keyword-matching <paramref name="query"/> against each item's title/summary
-/// client-side; a blank query just returns the most recent items.
+/// The Conversation, BBC News, or one of several Hindi outlets). Unlike
+/// <see cref="NewsApiOrgClient"/>'s "everything" search endpoint, an RSS feed isn't itself
+/// queryable — it's just "whatever the source most recently published."
+/// <see cref="SearchAsync"/> approximates a search by fetching the feed and keyword-matching
+/// <paramref name="query"/> against each item's title/summary client-side; a blank query
+/// just returns the most recent items.
 /// </summary>
 public sealed class RssNewsSearchClient : INewsSearchClient
 {
@@ -19,16 +20,29 @@ public sealed class RssNewsSearchClient : INewsSearchClient
     private readonly HttpClient _http;
     private readonly string _feedUrl;
     private readonly string _sourceName;
+    private readonly string _locale;
+    private readonly bool _matchQuery;
 
-    public RssNewsSearchClient(HttpClient http, string feedUrl, string sourceName)
+    /// <param name="matchQuery">
+    /// When false, the query is ignored entirely and the most recent items are always
+    /// returned — used for the Hindi sources, since SearchAgent only ever plans
+    /// English-language queries and literal substring-matching those against Devanagari
+    /// text would essentially never hit. English-language feeds keep real keyword matching.
+    /// </param>
+    public RssNewsSearchClient(HttpClient http, string feedUrl, string sourceName, string locale, bool matchQuery = true)
     {
         _http = http;
         if (!_http.DefaultRequestHeaders.UserAgent.Any())
         {
-            _http.DefaultRequestHeaders.UserAgent.ParseAdd("PositiveNews.McpServer/1.0");
+            // A handful of these outlets (TV9, Jansatta) return 403 to a bare custom UA but
+            // serve normally to something that looks like a real browser.
+            _http.DefaultRequestHeaders.UserAgent.ParseAdd(
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36 PositiveNews.McpServer/1.0");
         }
         _feedUrl = feedUrl;
         _sourceName = sourceName;
+        _locale = locale;
+        _matchQuery = matchQuery;
     }
 
     public async Task<NewsSearchResponse> SearchAsync(string query, int max, CancellationToken ct)
@@ -62,9 +76,9 @@ public sealed class RssNewsSearchClient : INewsSearchClient
                 $"{_sourceName} RSS feed returned unparseable XML: {ex.Message}");
         }
 
-        var keywords = query
-            .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .ToList();
+        var keywords = _matchQuery
+            ? query.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList()
+            : [];
 
         var matches = feed.Items
             .Where(item => keywords.Count == 0 || MatchesAnyKeyword(item, keywords))
@@ -98,7 +112,8 @@ public sealed class RssNewsSearchClient : INewsSearchClient
             _sourceName,
             item.PublishDate == default ? null : item.PublishDate,
             item.Summary?.Text ?? Snippetize((item.Content as TextSyndicationContent)?.Text),
-            imageUrl);
+            imageUrl,
+            _locale);
     }
 
     // <content> on a feed like The Conversation's is the full HTML article body — strip tags

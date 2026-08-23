@@ -17,5 +17,11 @@ public sealed class NewsStory
     public int Score { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
 
+    /// <summary>The language this story's own Headline/Body is written in (e.g. "en", "hi")
+    /// — carried over from the source candidate's <c>Locale</c>, not translated. A story
+    /// with Locale "hi" is native Hindi copy, distinct from a <see cref="StoryTranslation"/>
+    /// (an on-demand translation of an English story).</summary>
+    public string Locale { get; set; } = "en";
+
     public List<StoryTranslation> Translations { get; set; } = [];
 }

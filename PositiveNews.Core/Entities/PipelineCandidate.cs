@@ -21,6 +21,11 @@ public sealed class PipelineCandidate
     public string? Snippet { get; set; }
     public string? ImageUrl { get; set; }
 
+    /// <summary>The source article's own language (e.g. "en", "hi") — known structurally
+    /// from which <c>INewsSearchClient</c> found it, never LLM-inferred. Decides what
+    /// language <c>SummarizerAgent</c> writes this candidate's <see cref="NewsStory"/> in.</summary>
+    public string Locale { get; set; } = "en";
+
     /// <summary>Null until <c>PositivityScorerAgent</c> has scored this candidate.</summary>
     public int? Score { get; set; }
     public string? ScoreReasoning { get; set; }

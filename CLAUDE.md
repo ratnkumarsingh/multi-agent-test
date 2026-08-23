@@ -85,6 +85,49 @@ summary/content client-side (a blank query just returns the most recent items). 
 commonly carry the body in `<content>` rather than `<summary>` (hit this with The
 Conversation's feed) — check both, or matching silently degrades to title-only.
 
+**Native-language stories, not just more English sources**: 10 Hindi outlets (BBC Hindi,
+Amar Ujala, Dainik Bhaskar, NDTV Khabar, News18 Hindi, Vishvas News, Oneindia Hindi, TV9
+Bharatvarsh, Jansatta, Aaj Tak — per two source-quality lists Ratnesh provided) are wired
+in as `RssNewsSearchClient` instances with `locale: "hi"`. Ratnesh's explicit call (asked
+via `AskUserQuestion`): stories sourced from these outlets are curated and displayed **in
+Hindi as-is**, not translated to English — a genuinely mixed-language Home feed, not a
+translate-on-ingest normalization step.
+
+- `NewsArticle` (both McpServer's and Agents' copies), `NewsCandidate`, `PipelineCandidate`,
+  and `NewsStory` all carry a structured `Locale` field, threaded end-to-end from
+  "which `RssNewsSearchClient`/`NewsApiOrgClient` instance found this" through to what
+  language `SummarizerAgent` writes the final headline/body in — **never LLM-inferred**,
+  since the locale is already known deterministically at the source, and per this project's
+  "stays structured, never summarized into prose" rule that's exactly the kind of value an
+  LLM shouldn't be asked to guess.
+- Hindi `RssNewsSearchClient` instances are constructed with `matchQuery: false` — they
+  ignore the query text entirely and always return their most recent items, because
+  `SearchAgent` only ever plans English-language search queries and literal
+  substring-matching those against Devanagari text would essentially never hit.
+  `PositivityScorerAgent` needed no changes to handle Hindi input correctly (verified live,
+  not assumed) — positivity judgment isn't language-dependent.
+- `Story.razor`'s "Translate to Hindi" button is hidden when `CurrentStory.Locale == "hi"`
+  (translating an already-Hindi story to Hindi is meaningless) — the one UI change this
+  needed; search/filtering/date formatting all degrade gracefully on Hindi text unchanged.
+- **A handful of these outlets (TV9, Jansatta) return 403 to a plain custom User-Agent but
+  serve normally to a realistic browser UA** — `RssNewsSearchClient`'s default UA string
+  was changed accordingly for all RSS sources, not just the Hindi ones.
+- **Every one of the 10 URLs was individually verified with real fetched content before
+  being hardcoded** — plausible guesses for several other major Hindi outlets (Hindustan,
+  Dainik Jagran, Navbharat Times, ABP News, Business Standard Hindi, Zee News, The Quint)
+  turned up dead subdomains or 404s, and Dainik Bhaskar's `bhaskarhindi.com` mirror plus
+  The Better India's Hindi site both 403'd regardless of User-Agent — all left out rather
+  than wired to something broken or guessed.
+- **Known live-tested side effect, not yet addressed**: because the Hindi sources return
+  the same "most recent" items regardless of which of `SearchAgent`'s 3-5 differently-worded
+  planned queries is asked, they tend to win `AggregateNewsSearchClient`'s newest-first
+  merge on every query call, crowding the shared per-query result cap with near-duplicates
+  that then get deduped away — net effect, a live test run found fewer total distinct
+  candidates (9) than a comparable pre-Hindi-sources run (20). Not broken (the run still
+  completed, produced a genuine high-quality Hindi story), but the source-diversity budget
+  design in `AggregateNewsSearchClient`/`SearchAgent`'s per-query loop could use revisiting
+  if candidate volume matters more than it currently does.
+
 ## Secrets
 
 `AnthropicClient` is configured from `AnthropicOptions` (bound from the `"Anthropic"`

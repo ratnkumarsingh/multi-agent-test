@@ -312,7 +312,8 @@ static async Task<int> RunScoreTestAsync(IConfiguration config)
         "Example News",
         DateTimeOffset.UtcNow,
         "Volunteers turned a scorched lot back into a working playground in under 48 hours, no city budget involved.",
-        null);
+        null,
+        "en");
 
     var negative = new NewsCandidate(
         "Factory Fire Kills Three, Dozens Injured in Industrial Accident",
@@ -320,7 +321,8 @@ static async Task<int> RunScoreTestAsync(IConfiguration config)
         "Example News",
         DateTimeOffset.UtcNow,
         "Investigators are probing the cause of a blaze that tore through a chemical plant overnight, killing three workers.",
-        null);
+        null,
+        "en");
 
     Console.WriteLine("Scoring a deliberately positive headline vs. a deliberately negative one:\n");
 

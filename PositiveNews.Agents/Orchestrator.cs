@@ -14,7 +14,8 @@ public sealed record CuratedStory(
     string SourceUrl,
     string Source,
     DateTimeOffset? PublishedAt,
-    int Score);
+    int Score,
+    string Locale);
 
 /// <summary>
 /// Ties the pipeline together: <see cref="SearchAgent"/> finds candidates,
@@ -171,6 +172,7 @@ public sealed class Orchestrator
             PublishedAt = c.PublishedAt,
             Snippet = c.Snippet,
             ImageUrl = c.ImageUrl,
+            Locale = c.Locale,
         }).ToList();
 
         await using var writeDb = await _dbContextFactory.CreateDbContextAsync(ct);
@@ -259,6 +261,7 @@ public sealed class Orchestrator
                     PublishedAt = candidate.PublishedAt,
                     Score = candidate.Score!.Value,
                     CreatedAt = DateTimeOffset.UtcNow,
+                    Locale = candidate.Locale,
                 });
                 var row = await db.PipelineCandidates.FirstAsync(c => c.Id == candidate.Id, token);
                 row.Summarized = true;
@@ -290,12 +293,12 @@ public sealed class Orchestrator
 
     private static List<CuratedStory> ToCuratedStories(IEnumerable<NewsStory> stories) =>
         stories
-            .Select(s => new CuratedStory(s.Headline, s.Body, s.ImageUrl, s.SourceUrl, s.Source, s.PublishedAt, s.Score))
+            .Select(s => new CuratedStory(s.Headline, s.Body, s.ImageUrl, s.SourceUrl, s.Source, s.PublishedAt, s.Score, s.Locale))
             .OrderByDescending(s => s.Score)
             .ToList();
 
     private static NewsCandidate ToNewsCandidate(PipelineCandidate c) =>
-        new(c.Title, c.Url, c.Source, c.PublishedAt, c.Snippet, c.ImageUrl);
+        new(c.Title, c.Url, c.Source, c.PublishedAt, c.Snippet, c.ImageUrl, c.Locale);
 
     private async Task RecordStepAsync(
         int runId, string agentName, string? itemLabel, PipelineStepStatus status,

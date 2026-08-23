@@ -30,7 +30,12 @@ public sealed record NewsArticle(
     string Source,
     DateTimeOffset? PublishedAt,
     string? Snippet,
-    string? ImageUrl);
+    string? ImageUrl,
+    /// <summary>BCP-47-ish locale of the article's own language (e.g. "en", "hi") — known
+    /// structurally at the source (NewsAPI queries English; each RSS client is configured
+    /// for one outlet's language), never inferred by an LLM. Downstream, this decides what
+    /// language SummarizerAgent writes the final story copy in.</summary>
+    string Locale);
 
 /// <summary>
 /// The one envelope <c>SearchNews</c> ever returns. <see cref="TotalCount"/> is the

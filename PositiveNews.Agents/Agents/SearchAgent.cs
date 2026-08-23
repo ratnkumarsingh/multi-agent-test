@@ -9,7 +9,8 @@ public sealed record NewsCandidate(
     string Source,
     DateTimeOffset? PublishedAt,
     string? Snippet,
-    string? ImageUrl);
+    string? ImageUrl,
+    string Locale);
 
 /// <summary>
 /// Decides which search queries to run for today's positive-news pass (forced tool_choice),
@@ -126,7 +127,8 @@ public sealed class SearchAgent : IAgent<string, IReadOnlyList<NewsCandidate>>
                     article.Source,
                     article.PublishedAt,
                     article.Snippet,
-                    article.ImageUrl));
+                    article.ImageUrl,
+                    article.Locale));
             }
         }
 
