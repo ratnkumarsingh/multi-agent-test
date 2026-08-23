@@ -8,8 +8,37 @@ namespace PositiveNews.Web.Components.Pages;
 
 public partial class Story
 {
-    private const string TargetLocale = "hi";
-    private const string TargetLanguageName = "Hindi";
+    // Broad national + international coverage per Ratnesh's request, excluding Arabic,
+    // Urdu, and Bengali. Translation is on-demand/cached (not a pipeline-run fan-out), same
+    // design as the original Hindi-only button — this list only drives what the switcher
+    // offers; a language is only ever actually translated if a viewer picks it.
+    private static readonly (string Locale, string Name)[] SupportedLocales =
+    [
+        ("hi", "Hindi"),
+        ("en", "English"),
+        ("es", "Spanish"),
+        ("fr", "French"),
+        ("de", "German"),
+        ("pt", "Portuguese"),
+        ("ru", "Russian"),
+        ("zh", "Chinese"),
+        ("ja", "Japanese"),
+        ("ko", "Korean"),
+        ("it", "Italian"),
+        ("id", "Indonesian"),
+        ("vi", "Vietnamese"),
+        ("th", "Thai"),
+        ("tr", "Turkish"),
+        ("ta", "Tamil"),
+        ("te", "Telugu"),
+        ("mr", "Marathi"),
+        ("gu", "Gujarati"),
+        ("kn", "Kannada"),
+        ("ml", "Malayalam"),
+        ("pa", "Punjabi"),
+        ("or", "Odia"),
+        ("as", "Assamese"),
+    ];
 
     [Parameter]
     public int Id { get; set; }
@@ -25,19 +54,27 @@ public partial class Story
     private IServiceProvider Services { get; set; } = default!;
 
     private NewsStory? CurrentStory { get; set; }
-    private StoryTranslation? _translation;
+    private Dictionary<string, StoryTranslation> _translations = new();
+    private string _selectedLocale = "";
     private bool _showingTranslation;
     private bool _isTranslating;
     private string? _translationError;
+
+    // A story can't be translated into the language it's already natively written in.
+    private (string Locale, string Name)[] AvailableLocales =>
+        SupportedLocales.Where(l => l.Locale != CurrentStory?.Locale).ToArray();
+
+    private string SelectedLanguageName =>
+        SupportedLocales.FirstOrDefault(l => l.Locale == _selectedLocale).Name ?? _selectedLocale;
 
     private string PublishedLabel =>
         CurrentStory?.PublishedAt is { } p ? p.ToString("MMM d, yyyy") : "Date unknown";
 
     private string DisplayHeadline =>
-        _showingTranslation && _translation is not null ? _translation.Headline : CurrentStory?.Headline ?? "";
+        _showingTranslation && _translations.TryGetValue(_selectedLocale, out var t) ? t.Headline : CurrentStory?.Headline ?? "";
 
     private string DisplayBody =>
-        _showingTranslation && _translation is not null ? _translation.Body : CurrentStory?.Body ?? "";
+        _showingTranslation && _translations.TryGetValue(_selectedLocale, out var t) ? t.Body : CurrentStory?.Body ?? "";
 
     protected override async Task OnParametersSetAsync()
     {
@@ -46,10 +83,26 @@ public partial class Story
 
         if (CurrentStory is not null)
         {
-            _translation = await db.StoryTranslations
+            var rows = await db.StoryTranslations
                 .AsNoTracking()
-                .FirstOrDefaultAsync(t => t.NewsStoryId == CurrentStory.Id && t.Locale == TargetLocale);
+                .Where(t => t.NewsStoryId == CurrentStory.Id)
+                .ToListAsync();
+            _translations = rows.ToDictionary(t => t.Locale);
+
+            if (_selectedLocale == "" && AvailableLocales.Length > 0)
+            {
+                _selectedLocale = AvailableLocales[0].Locale;
+            }
         }
+    }
+
+    private void OnLocaleChanged(ChangeEventArgs e)
+    {
+        _selectedLocale = e.Value?.ToString() ?? _selectedLocale;
+        // Switching languages mid-view shouldn't keep showing the previous language's text
+        // under the newly-selected label — go back to original until "Translate" is clicked.
+        _showingTranslation = false;
+        _translationError = null;
     }
 
     private async Task ToggleTranslationAsync()
@@ -60,7 +113,7 @@ public partial class Story
             return;
         }
 
-        if (_translation is not null)
+        if (_translations.ContainsKey(_selectedLocale))
         {
             _showingTranslation = true;
             return;
@@ -71,14 +124,15 @@ public partial class Story
 
         try
         {
+            var languageName = SupportedLocales.First(l => l.Locale == _selectedLocale).Name;
             var translationAgent = Services.GetRequiredService<TranslationAgent>();
-            var request = new TranslationRequest(CurrentStory!.Headline, CurrentStory.Body, TargetLanguageName);
+            var request = new TranslationRequest(CurrentStory!.Headline, CurrentStory.Body, languageName);
             var result = await translationAgent.RunAsync(request);
 
             var row = new StoryTranslation
             {
                 NewsStoryId = CurrentStory.Id,
-                Locale = TargetLocale,
+                Locale = _selectedLocale,
                 Headline = result.Headline,
                 Body = result.Body,
                 CreatedAt = DateTimeOffset.UtcNow,
@@ -88,7 +142,7 @@ public partial class Story
             db.StoryTranslations.Add(row);
             await db.SaveChangesAsync();
 
-            _translation = row;
+            _translations[_selectedLocale] = row;
             _showingTranslation = true;
         }
         catch (Exception ex)
