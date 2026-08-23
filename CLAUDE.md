@@ -90,11 +90,16 @@ so the Anthropic key only needs setting once for the whole repo, not per-project
 **Per-call model override**: `AnthropicClient.CallToolAsync` takes an optional `model`
 parameter, defaulting to `AnthropicOptions.Model` when omitted — for an agent that
 deliberately runs on a different model than the rest of the pipeline (currently just
-`TranslationAgent`, on the cheaper `AnthropicOptions.TranslationModel`). Both `Model` and
+`TranslationAgent`, via its own `AnthropicOptions.TranslationModel`). Both `Model` and
 `TranslationModel` follow the same bare-id-vs-gateway-namespaced-id rule — a gateway may
 reject the bare id (`"claude-haiku-4-5-20251001 is not a valid model ID"` was the actual
 error hit here), in which case override `Anthropic:TranslationModel` via user-secrets the
 same way `Anthropic:Model` was already namespaced for this project's gateway.
+`TranslationModel` started on the cheaper Haiku tier, then was bumped to match `Model`'s
+Sonnet tier after Haiku's Hindi output wasn't reliably natural even with a tuned system
+prompt (see `.claude/skills/hindi-translation/`) — a reminder that prompt engineering
+raises a cheap model's ceiling but doesn't replace model capability when quality actually
+requires it.
 
 ## Persistence
 
