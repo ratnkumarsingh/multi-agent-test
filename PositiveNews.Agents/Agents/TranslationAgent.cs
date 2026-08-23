@@ -74,6 +74,48 @@ public sealed class TranslationAgent : IAgent<TranslationRequest, TranslatedCopy
         If not, rewrite it.
 
         Do not change the meaning while improving naturalness.
+
+        For scientific content, maintain a balance between technical accuracy and readability.
+
+        Do not:
+
+        - oversimplify scientific concepts
+        - replace technical concepts with approximate everyday meanings
+        - strengthen scientific claims
+        - introduce interpretations not present in the source
+        - blindly transliterate technical English terms
+
+        When a technical term has a commonly accepted Hindi equivalent, consider using it.
+
+        When the English technical term is more recognizable or standard among Hindi-speaking readers, retain the English term or use a Hindi-English combination where appropriate.
+
+        Choose terminology based on the intended audience and context. think like a native Hindi-speaking science journalist writing for a general audience.
+        thought process:
+
+         SOURCE
+          ↓
+        Understand the complete sentence
+          ↓
+        Identify domain + audience
+          ↓
+        Identify key concepts
+          ↓
+        Identify ambiguity / metaphor / idiom
+          ↓
+        Identify claim strength
+          ↓
+        Choose contextual Hindi terminology
+          ↓
+        Construct natural Hindi sentence
+          ↓
+        Native Hindi editorial pass
+          ↓
+        Scientific/technical accuracy pass
+          ↓
+        Claim-strength verification
+          ↓
+        Final output
+
         """;
 
     private static readonly JsonElement Schema = JsonSerializer.SerializeToElement(new

@@ -32,9 +32,12 @@
                     Read the original article &rarr;
                 </a>
 
-                <button type="button" class="story-page__translate-btn" disabled="@_isTranslating" @onclick="ToggleTranslationAsync">
-                    @(_isTranslating ? "Translating…" : _showingTranslation ? "Show Original" : "Translate to Hindi")
-                </button>
+                @if (CurrentStory.Locale != TargetLocale)
+                {
+                    <button type="button" class="story-page__translate-btn" disabled="@_isTranslating" @onclick="ToggleTranslationAsync">
+                        @(_isTranslating ? "Translating…" : _showingTranslation ? "Show Original" : "Translate to Hindi")
+                    </button>
+                }
             </div>
 
             @if (_translationError is not null)

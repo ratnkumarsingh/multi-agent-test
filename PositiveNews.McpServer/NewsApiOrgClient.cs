@@ -111,7 +111,8 @@ public sealed class NewsApiOrgClient : INewsSearchClient
                     a.Source?.Name ?? "Unknown",
                     a.PublishedAt,
                     a.Description,
-                    a.UrlToImage))
+                    a.UrlToImage,
+                    Locale: "en")) // this client always queries with &language=en
                 .ToList();
 
             return new NewsSearchResponse(articles, payload.TotalResults, Error: null);
